@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>WEdit local UI demo</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; min-height: 100vh; color: #e9edef; background: #0b141a; font: 14px/1.45 "Segoe UI", Arial, sans-serif; }
+    .topbar { height: 64px; padding: 0 28px; display: flex; align-items: center; gap: 14px; background: #202c33; border-bottom: 1px solid #314047; }
+    .avatar { width: 38px; height: 38px; border-radius: 50%; display: grid; place-items: center; color: #102820; background: #45d5a4; font-size: 16px; font-weight: 800; }
+    .contact { font-size: 15px; font-weight: 650; }
+    .sub { color: #aebac1; font-size: 12px; }
+    .chat { height: calc(100vh - 64px); padding: 70px 7vw; background-color: #0b141a; background-image: radial-gradient(#18252b 1px, transparent 1px); background-size: 23px 23px; }
+    .day { width: max-content; margin: 0 auto 38px; padding: 8px 13px; color: #c4d0d5; background: #18252b; border-radius: 9px; font-size: 11px; }
+    .bubble { position: relative; width: max-content; max-width: 540px; padding: 13px 16px 20px; margin: 0 0 22px; border-radius: 12px; box-shadow: 0 1px 2px #0005; }
+    .message-in { background: #202c33; }
+    .message-out { margin-left: auto; background: #005c4b; }
+    .selectable-text { color: #e9edef; }
+    .time { position: absolute; right: 9px; bottom: 4px; color: #aebac1; font-size: 10px; }
+    .demo-note { position: fixed; left: 24px; bottom: 20px; padding: 9px 12px; color: #bdd0d4; background: #15232b; border: 1px solid #30444d; border-radius: 9px; font-size: 11px; }
+  </style>
+</head>
+<body>
+  <header class="topbar"><div class="avatar">A</div><div><div class="contact">Alex Morgan</div><div class="sub">local UI demo · sample messages</div></div></header>
+  <main class="chat">
+    <div class="day">TODAY</div>
+    <div class="message-in bubble" data-testid="msg-container"><div class="selectable-text" data-testid="selectable-text">Hey, are we still on for coffee tomorrow?</div><span class="time">10:42</span></div>
+    <div class="message-out bubble" data-testid="msg-container"><div class="selectable-text" data-testid="selectable-text">Yep, noon works for me. See you there!</div><span class="time">10:44</span></div>
+  </main>
+  <div class="demo-note">Local demo page · fictional sample conversation · no WhatsApp account used</div>
+  <script src="../content.js"></script>
+  <script>
+    window.addEventListener('load', () => setTimeout(() => {
+      const edit = document.querySelector('.wedit-inline');
+      if (edit) edit.click();
+      const replacement = document.getElementById('wedit-replacement');
+      if (replacement) replacement.value = 'Yep, noon works for me. See you there!';
+    }, 900), { once: true });
+  </script>
+</body>
+</html>

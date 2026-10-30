@@ -2,7 +2,7 @@
 
 > A no-AI, local-only preview studio for WhatsApp Web. Edit how messages look in your own browser, try media previews, customize the panel, and keep portable backups.
 
-![WEdit Editor UI preview](docs/images/editor-preview.svg)
+![WEdit editor screenshot running the real content script with fictional sample messages](docs/images/editor-demo.png)
 
 WEdit changes the visible page in your browser. It does not send messages, change WhatsApp's servers, or change what another person sees. There is no AI, account, analytics, backend, or message-sync service.
 
@@ -51,7 +51,7 @@ The same script file is included as `content.js` for the extension build. Tamper
 
 Prerequisites: a registered Chrome Web Store developer account and a completed store listing. The store package is separate from this repository bundle.
 
-Run [`package-webstore.cmd`](scripts/package-webstore.cmd). It creates `dist/wedit-web-store.zip` containing the manifest, content script, and icons, with `manifest.json` at the ZIP root. Upload that ZIP from the [Chrome Web Store Developer Dashboard](https://chrome.google.com/webstore/devconsole/), complete the listing and privacy fields, and submit it for review. Store submissions require listing images and a screenshot; the previews in this repository are illustrative project visuals, not screenshots captured from WhatsApp Web.
+Run [`package-webstore.cmd`](scripts/package-webstore.cmd). It creates `dist/wedit-web-store.zip` containing the manifest, content script, and icons, with `manifest.json` at the ZIP root. Upload that ZIP from the [Chrome Web Store Developer Dashboard](https://chrome.google.com/webstore/devconsole/), complete the listing and privacy fields, and submit it for review. Store submissions need listing images and a screenshot. The PNG above shows the real WEdit interface running from `content.js` on a local demo page with fictional sample messages; it is not from a signed-in WhatsApp account. The SVGs below are illustrative panels.
 
 ## Data and privacy
 
@@ -82,7 +82,7 @@ See [Installation](docs/installation.md), [Feature guide](docs/features.md), and
 - `wedit.user.js` — Tampermonkey-ready userscript.
 - `install.cmd` — opens the browser extensions page and repository folder.
 - `scripts/package-webstore.cmd` — builds a minimal Web Store ZIP.
-- `docs/` — install, feature, privacy, and advanced guides plus UI preview artwork.
+- `docs/` — install, feature, privacy, and advanced guides, a local UI demo page, a real interface screenshot, and illustrative panel artwork.
 
 ## Contributing
 
