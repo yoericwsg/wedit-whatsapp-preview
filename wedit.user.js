@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         WEdit — WhatsApp Local Preview Editor
 // @namespace    local.wedit.preview
-// @version      3.3.0
+// @version      4.0.0
 // @description  Customizable local WhatsApp preview studio with themes and full backup/restore.
 // @match        https://web.whatsapp.com/*
 // @run-at       document-idle
@@ -10,8 +10,7 @@
 // @grant        GM_xmlhttpRequest
 // @grant        GM_info
 // @grant        GM_openInTab
-// @grant        GM_getValue
-// @grant        GM_setValue
+// @grant        GM_registerMenuCommand
 // @connect      raw.githubusercontent.com
 // ==/UserScript==
 
@@ -28,7 +27,6 @@
   const ANNOUNCEMENTS_URL = 'https://raw.githubusercontent.com/yoericwsg/wedit-whatsapp-preview/main/announcements.json';
   const RELEASE_INFO_URL = 'https://raw.githubusercontent.com/yoericwsg/wedit-whatsapp-preview/main/version.json';
   const USERSCRIPT_URL = 'https://raw.githubusercontent.com/yoericwsg/wedit-whatsapp-preview/main/wedit.user.js';
-  const ANNOUNCEMENT_PUBLISH_URL = '';
   const PANEL_ID = 'wedit-panel';
   const LAUNCHER_ID = 'wedit-launcher';
   const SELECTOR_TEXT = '[data-testid="selectable-text"], .selectable-text';
@@ -36,12 +34,21 @@
   const QUOTED = '[data-testid="quoted-message"], .quoted-message, [data-testid="quoted-message-container"]';
   const CHANGELOG_ENTRIES = [
     {
+      version: '4.0.0',
+      date: '2026-10-30',
+      title: 'Quick hide, clean updates, announcements site',
+      notes: [
+        'Added Quick hide (Alt+Shift+H) to restore original page text and hide WEdit controls instantly.',
+        'Update checks now show an in-page notice and only open Tampermonkey when you choose Update.',
+        'Added a Vercel announcements page and private server-side publisher.'
+      ]
+    },
+    {
       version: '3.3.0',
       date: '2026-10-30',
-      title: 'One-step, key-protected announcements',
+      title: 'Keyed announcement publishing',
       notes: [
-        'Publish announcements from News with one action and a private server-checked key.',
-        'The publisher keeps its GitHub token on the server and preserves the latest 30 posts.'
+        'Added an initial server-side publisher design; Vercel replaces the unpublished Netlify setup in 4.0.'
       ]
     },
     {
@@ -173,6 +180,7 @@
   let activeOriginalText = '';
   let searchTerm = '';
   let panelOpen = false;
+  let quickHide = false;
   let enhanceQueued = false;
   let pendingFile = null;
   let mediaDBPromise = null;
@@ -184,6 +192,7 @@
 
   const objectURLs = new Map();
   const mediaRendering = new Set();
+  const originalPositions = new WeakMap();
 
   function loadEdits() {
     try {
@@ -429,6 +438,12 @@
         font-family:Inter,ui-sans-serif,system-ui,-apple-system,
         BlinkMacSystemFont,"Segoe UI",sans-serif!important
       }
+
+      html.wedit-quick-hide #${LAUNCHER_ID},
+      html.wedit-quick-hide #${PANEL_ID},
+      html.wedit-quick-hide .wedit-inline,
+      html.wedit-quick-hide #wedit-toast,
+      html.wedit-quick-hide #wedit-update-notice {display:none!important}
 
       #${LAUNCHER_ID} {
         position:fixed;z-index:999999;right:22px;bottom:22px;
@@ -1125,12 +1140,16 @@
             <div class="wedit-kicker">WhatsApp Web utility</div>
             <div class="wedit-title">WEdit
               <span style="color:var(--wedit-accent);font-size:10px;letter-spacing:.6px">
-                STUDIO 3.2
+                STUDIO 4.0
               </span>
             </div>
           </div>
-          <button class="wedit-close" type="button"
-            title="Close panel" aria-label="Close panel">×</button>
+          <div style="display:flex;gap:6px;align-items:center">
+            <button class="wedit-mini-link" id="wedit-quick-hide" type="button"
+              title="Hide previews and WEdit controls (Alt+Shift+H)">Quick hide</button>
+            <button class="wedit-close" type="button"
+              title="Close panel" aria-label="Close panel">×</button>
+          </div>
         </div>
         <div class="wedit-note">
           <b>Private local previews.</b> Edits, themes and media are stored
@@ -1425,7 +1444,7 @@
               <div class="wedit-label">Release notes</div>
               <div class="wedit-heading-title">Changelog</div>
             </div>
-            <span class="wedit-live-dot">3.3.0</span>
+            <span class="wedit-live-dot">4.0.0</span>
           </div>
           <div class="wedit-changelog-list" id="wedit-changelog-list"></div>
         </section>
@@ -1443,30 +1462,8 @@
             Announcements load from the public WEdit feed. They contain text and optional web links.
           </div>
           <div class="wedit-announcement-list" id="wedit-announcement-list"></div>
-          <div class="wedit-section-row">
-            <div class="wedit-section-title">Create a post</div>
-          </div>
           <div class="wedit-helper">
-            Write your post, enter the private publishing key, then select Publish. The key is checked by the WEdit publishing service and is never saved here.
-          </div>
-          <label class="wedit-label" for="wedit-announcement-title">Title</label>
-          <input id="wedit-announcement-title" type="text" maxlength="140"
-            placeholder="Short announcement title">
-          <label class="wedit-label" for="wedit-announcement-body">Message</label>
-          <textarea id="wedit-announcement-body" maxlength="4000"
-            placeholder="Write the announcement people will see…"></textarea>
-          <label class="wedit-label" for="wedit-announcement-url">Link (optional · HTTPS)</label>
-          <input id="wedit-announcement-url" type="url"
-            placeholder="https://your-site.example/post">
-          <label class="wedit-label" for="wedit-announcement-key">Publishing key</label>
-          <input id="wedit-announcement-key" type="password" autocomplete="off"
-            maxlength="256" placeholder="Enter the private publishing key">
-          <button class="wedit-btn wedit-primary wedit-wide"
-            id="wedit-build-announcement" type="button" disabled>
-            Publish announcement
-          </button>
-          <div class="wedit-helper" id="wedit-announcement-draft-status">
-            Open News to load the current feed before creating a post.
+            Posts are published on the WEdit announcements website. The key is entered there and checked server-side; it is never stored in this extension.
           </div>
           <label class="wedit-sound-row">
             <input id="wedit-sound-toggle" type="checkbox">
@@ -1488,6 +1485,9 @@
     panel.querySelector('.wedit-close')
       .addEventListener('click', () => togglePanel(false));
 
+    panel.querySelector('#wedit-quick-hide')
+      .addEventListener('click', () => setQuickHide(true));
+
     panel.querySelectorAll('.wedit-nav-tab').forEach(btn =>
       btn.addEventListener('click', () => {
         playInterfaceSound('tap');
@@ -1500,21 +1500,6 @@
         playInterfaceSound('tap');
         refreshAnnouncements(true);
       });
-
-    for (const id of [
-      'wedit-announcement-title',
-      'wedit-announcement-body',
-      'wedit-announcement-url',
-      'wedit-announcement-key'
-    ]) {
-      panel.querySelector(`#${id}`).addEventListener('input', () => {
-        panel.querySelector('#wedit-announcement-draft-status').textContent =
-          'Ready when your title, message, and publishing key are filled in.';
-      });
-    }
-
-    panel.querySelector('#wedit-build-announcement')
-      .addEventListener('click', buildAnnouncementFile);
 
     panel.querySelector('#wedit-pick-stickers')
       .addEventListener('click', () =>
@@ -1716,102 +1701,6 @@
     count.textContent = `${length} character${length === 1 ? '' : 's'}`;
     preview.textContent = value || '(Empty message text)';
     if (resetDraft) resetDraft.disabled = !activeKey;
-  }
-
-  async function buildAnnouncementFile() {
-    const status = document.getElementById('wedit-announcement-draft-status');
-    const buildButton = document.getElementById('wedit-build-announcement');
-    const title = document.getElementById('wedit-announcement-title').value.trim();
-    const body = document.getElementById('wedit-announcement-body').value.trim();
-    const rawURL = document.getElementById('wedit-announcement-url').value.trim();
-    const keyInput = document.getElementById('wedit-announcement-key');
-    const key = keyInput.value;
-    if (!title || !body) {
-      status.textContent = 'Add a title and message before publishing.';
-      showToast('A title and announcement message are required.');
-      return;
-    }
-    if (!key) {
-      status.textContent = 'Enter the private publishing key to publish.';
-      showToast('A publishing key is required.');
-      keyInput.focus();
-      return;
-    }
-
-    let url = '';
-    if (rawURL) {
-      try {
-        const parsed = new URL(rawURL);
-        if (parsed.protocol !== 'https:') throw new Error('HTTPS required');
-        url = parsed.href;
-      } catch (_) {
-        status.textContent = 'The optional link must be a valid HTTPS address.';
-        showToast('Use a full https:// link or leave the link blank.');
-        return;
-      }
-    }
-
-    const announcement = {
-      title: title.slice(0, 140),
-      body: body.slice(0, 4000)
-    };
-    if (url) announcement.url = url;
-    if (buildButton) buildButton.disabled = true;
-    status.textContent = 'Checking the publishing key and posting…';
-    try {
-      const result = await publishAnnouncement({ announcement, key });
-      keyInput.value = '';
-      document.getElementById('wedit-announcement-title').value = '';
-      document.getElementById('wedit-announcement-body').value = '';
-      document.getElementById('wedit-announcement-url').value = '';
-      status.textContent = result.message || 'Announcement published. Refreshing News…';
-      await refreshAnnouncements(true);
-      playInterfaceSound('success');
-    } catch (error) {
-      status.textContent = error.message || 'Could not publish the announcement.';
-    } finally {
-      if (buildButton) buildButton.disabled = false;
-    }
-  }
-
-  function publishAnnouncement(payload) {
-    if (!ANNOUNCEMENT_PUBLISH_URL) {
-      return Promise.reject(new Error('Publisher is not connected yet. Set the Netlify endpoint and permissions first.'));
-    }
-    if (typeof GM_xmlhttpRequest === 'function') {
-      return new Promise((resolve, reject) => {
-        GM_xmlhttpRequest({
-          method: 'POST',
-          url: ANNOUNCEMENT_PUBLISH_URL,
-          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${payload.key}` },
-          data: JSON.stringify({ announcement: payload.announcement }),
-          timeout: 15000,
-          onload: response => {
-            let result;
-            try { result = JSON.parse(response.responseText); } catch (_) { result = {}; }
-            if (response.status >= 200 && response.status < 300) resolve(result);
-            else reject(new Error(result.error || `Publish failed (HTTP ${response.status}).`));
-          },
-          onerror: () => reject(new Error('Could not reach the announcement publisher.')),
-          ontimeout: () => reject(new Error('The announcement publisher timed out.'))
-        });
-      });
-    }
-    if (typeof chrome !== 'undefined' && chrome.runtime?.id) {
-      return new Promise((resolve, reject) => {
-        chrome.runtime.sendMessage({
-          type: 'WEDIT_PUBLISH_ANNOUNCEMENT',
-          endpoint: ANNOUNCEMENT_PUBLISH_URL,
-          key: payload.key,
-          announcement: payload.announcement
-        }, response => {
-          if (chrome.runtime.lastError) reject(new Error('Could not reach the publisher.'));
-          else if (response?.ok) resolve(response);
-          else reject(new Error(response?.error || 'Could not publish the announcement.'));
-        });
-      });
-    }
-    return Promise.reject(new Error('Announcement publishing is available in the installed WEdit extension or Tampermonkey script.'));
   }
 
   function soundsEnabled() {
@@ -2696,6 +2585,37 @@
     panel.classList.toggle('open', panelOpen);
   }
 
+  function restoreRootForQuickHide(root) {
+    if (!root?.isConnected) return;
+    const textNode = getTextNode(root);
+    if (textNode) {
+      const key = getKey(root, textNode);
+      const entry = key ? edits[key] : null;
+      if (entry && safeText(textNode) === (entry.replacement || '')) {
+        textNode.textContent = entry.originalText || '';
+      }
+    }
+    root.querySelectorAll(':scope > .wedit-inline, :scope > .wedit-local-flag, :scope > .wedit-media-preview')
+      .forEach(element => element.remove());
+    root.classList.remove('wedit-message-hover');
+    if (originalPositions.has(root)) {
+      root.style.position = originalPositions.get(root);
+      originalPositions.delete(root);
+    }
+  }
+
+  function setQuickHide(hidden) {
+    quickHide = Boolean(hidden);
+    document.documentElement.classList.toggle('wedit-quick-hide', quickHide);
+    if (quickHide) {
+      togglePanel(false);
+      document.querySelectorAll(SELECTOR_ROOT).forEach(restoreRootForQuickHide);
+      return;
+    }
+    queueEnhance();
+    showToast('WEdit view restored.');
+  }
+
   function showToast(message) {
     const old = document.getElementById('wedit-toast');
     if (old) old.remove();
@@ -2728,11 +2648,11 @@
     notice.setAttribute('role', 'status');
 
     const message = document.createElement('span');
-    message.textContent = `WEdit ${version} is ready. Open Tampermonkey to install the update.`;
+    message.textContent = `WEdit ${version} is available.`;
 
     const update = document.createElement('button');
     update.type = 'button';
-    update.textContent = 'Open update';
+    update.textContent = 'Update in Tampermonkey';
     update.addEventListener('click', () => {
       try {
         GM_openInTab(USERSCRIPT_URL, { active: true, insert: true });
@@ -2752,41 +2672,41 @@
     document.body.appendChild(notice);
   }
 
-  function checkForUserscriptUpdate() {
+  function checkForUserscriptUpdate(manualCheck = false) {
     if (
       typeof GM_info === 'undefined' ||
       typeof GM_xmlhttpRequest !== 'function' ||
       !GM_info.script?.version
-    ) return;
+    ) {
+      if (manualCheck) showToast('Update checks are available from Tampermonkey.');
+      return;
+    }
 
     GM_xmlhttpRequest({
       method: 'GET',
       url: `${RELEASE_INFO_URL}?check=${Date.now()}`,
-      headers: { Accept: 'application/json' },
+      headers: { Accept: 'application/json', 'Cache-Control': 'no-cache' },
       timeout: 10000,
       onload: response => {
-        if (response.status < 200 || response.status >= 300) return;
+        if (response.status < 200 || response.status >= 300) {
+          if (manualCheck) showToast(`Update check failed (HTTP ${response.status}).`);
+          return;
+        }
         try {
           const release = JSON.parse(response.responseText);
           if (isNewerVersion(release.version, GM_info.script.version)) {
             showUpdateNotice(release.version);
-            try {
-              const key = 'wedit-update-screen-opened';
-              if (
-                document.visibilityState === 'visible' &&
-                GM_getValue(key, '') !== release.version
-              ) {
-                GM_setValue(key, release.version);
-                GM_openInTab(USERSCRIPT_URL, { active: true, insert: true });
-              }
-            } catch (_) {
-              // Keep the in-page update button available if opening a tab fails.
-            }
+          } else {
+            document.getElementById('wedit-update-notice')?.remove();
+            if (manualCheck) showToast('WEdit is up to date.');
           }
         } catch (_) {
           // An invalid release marker should not affect WhatsApp or WEdit.
+          if (manualCheck) showToast('The published update marker is invalid.');
         }
-      }
+      },
+      onerror: () => { if (manualCheck) showToast('Could not check for WEdit updates.'); },
+      ontimeout: () => { if (manualCheck) showToast('The WEdit update check timed out.'); }
     });
   }
 
@@ -3680,6 +3600,7 @@
   }
 
   function handleClick(event) {
+    if (quickHide) return;
     const button = event.target.closest('.wedit-inline');
     if (!button) return;
 
@@ -3699,6 +3620,10 @@
 
   function enhanceRoot(root) {
     if (!root?.isConnected) return;
+    if (quickHide) {
+      restoreRootForQuickHide(root);
+      return;
+    }
 
     const textNode = getTextNode(root);
     if (!isUsableMessage(root, textNode)) return;
@@ -3712,6 +3637,7 @@
     root.classList.add('wedit-message-hover');
 
     if (!root.style.position || root.style.position === 'static') {
+      if (!originalPositions.has(root)) originalPositions.set(root, root.style.position);
       root.style.position = 'relative';
     }
 
@@ -3788,10 +3714,18 @@
     addStyles();
     buildUI();
     checkForUserscriptUpdate();
+    if (typeof GM_registerMenuCommand === 'function') {
+      GM_registerMenuCommand('Check for WEdit updates', () => checkForUserscriptUpdate(true));
+    }
 
     document.addEventListener('click', handleClick, true);
 
     document.addEventListener('keydown', event => {
+      if (event.altKey && event.shiftKey && event.key.toLowerCase() === 'h') {
+        event.preventDefault();
+        setQuickHide(!quickHide);
+        return;
+      }
       if (
         event.altKey &&
         event.shiftKey &&

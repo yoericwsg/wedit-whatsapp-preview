@@ -1,10 +1,16 @@
 # Changelog
 
+## 4.0.0 — 2026-10-30
+
+- Added Quick hide: **Alt+Shift+H** restores original message text and removes WEdit buttons and previews until toggled back on.
+- Reworked Tampermonkey update discovery to show an in-page notice, with an explicit update action and manual menu check.
+- Added a Vercel announcements website with a server-side publisher; announcement keys and GitHub tokens stay outside the public page bundle.
+- Simplified the WEdit News panel to read-only announcements and moved publishing to the website.
+
 ## 3.3.0 — 2026-10-30
 
-- Replaced the multi-step announcement file workflow with a one-step publisher.
-- Added server-side key checks; the publishing key and GitHub token are not stored in the extension.
-- Added a Netlify Function that validates posts and keeps the latest 30 announcements.
+- Added an initial announcement publishing scaffold; the deployed publishing site arrives in 4.0.0.
+- Added server-side key validation design without placing a key or GitHub token in the extension.
 
 ## 3.2.1 — 2026-10-30
 

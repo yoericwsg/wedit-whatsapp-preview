@@ -25,7 +25,7 @@ Run `scripts/package-webstore.cmd` from the repo or double-click it. The output 
 
 ## Publish an announcement
 
-Fill the title and message in **News**, then choose **Build announcement file** and **Copy feed file**. Open the GitHub editor, replace all text in `announcements.json`, and commit to `main` using an account with repository write access. The composer keeps the current posts and inserts the new one at the top. Installed clients check while their News tab is selected and visible, then again every 15 minutes. The feed is public and contains no authentication or private storage.
+**News** reads the public `announcements.json` feed from GitHub. It refreshes when opened and every 15 minutes while selected in a visible tab. To publish, use the Vercel announcements site. That page checks a private key server-side and uses a Vercel environment token to commit new public posts to GitHub. Never paste either secret into the extension source or public feed.
 
 Example feed structure:
 

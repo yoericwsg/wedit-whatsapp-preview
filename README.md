@@ -15,6 +15,7 @@ WEdit changes the visible page in your browser. It does not send messages, chang
 - Import saved WhatsApp sticker images in bulk or from a folder, then reuse them from a personal sticker shelf.
 - Choose eight themes, adjust a custom palette, enable Liquid Glass, and import/export theme JSON.
 - Export or import a full JSON backup, including saved previews, the selected theme, and uploaded media.
+- Use Quick hide to restore original message text and hide all WEdit controls instantly; toggle it with **Alt+Shift+H**.
 - Read the in-panel changelog and public announcements; optional interface sounds are controlled by a toggle.
 - Toggle the panel with **Alt+Shift+E**. The editor also advertises **Ctrl/⌘+Enter** to apply the current edit.
 
@@ -48,7 +49,7 @@ Enable **Developer mode** → **Load unpacked** → select this repository folde
 3. In GitHub, open the **Raw** view; Tampermonkey should offer to install the userscript. If it displays source text, copy it into Tampermonkey's **Create a new script** editor, replace the starter text, and save.
 4. Reload WhatsApp Web.
 
-The userscript checks this repository's published version when WhatsApp Web loads. When newer code is available, it opens Tampermonkey's update screen once for that version and leaves an **Open update** button in WEdit. Tampermonkey also checks on its configured schedule; a code release must increase the userscript `@version` and `version.json` together.
+The userscript checks this repository's published version when WhatsApp Web loads. When a newer version is available, WEdit shows an in-page notice. Choose **Update in Tampermonkey** to open the install/update screen; WEdit no longer opens tabs by itself. Tampermonkey also checks on its configured schedule. You can run **Check for WEdit updates** from the Tampermonkey menu. Each code release must increase the userscript `@version` and `version.json` together.
 
 Tampermonkey asks for permission to contact `raw.githubusercontent.com` so the News tab can read the public announcement feed. No WhatsApp content or local previews are sent with that request.
 
@@ -83,14 +84,18 @@ See [Privacy and storage](docs/privacy-and-storage.md) for details.
 
 See [Installation](docs/installation.md), [Feature guide](docs/features.md), and [Advanced use](docs/advanced-use.md).
 
-The public [changelog](CHANGELOG.md) records releases. To publish, open **News**, enter a title, message, optional HTTPS link, and the private publishing key, then choose **Publish announcement**. WEdit clears the key after a successful post. The server validates the post and updates the public feed while keeping its GitHub token out of the extension.
+The public [changelog](CHANGELOG.md) records releases. The separate Vercel announcements website displays the public feed and has a one-step publisher. The publishing key and GitHub token stay server-side; the WEdit extension only reads the public feed.
 
-### Set up the announcement publisher
+### Deploy the announcements website
 
-The publishing service must be deployed once before the **Publish announcement** button can post. Connect this repository to Netlify and choose a site name. Add its function URL to `ANNOUNCEMENT_PUBLISH_URL` in `content.js`, `background.js`, and `wedit.user.js`; add the matching Netlify host permission to `manifest.json` and `@connect` line in `wedit.user.js`. Reload the extension and Tampermonkey script, then redeploy the Netlify site. In Netlify, add these environment variables with **Functions** scope, then redeploy:
+This repo contains a static Vercel site at [`index.html`](index.html) and a server-side publisher at [`api/announcements.js`](api/announcements.js).
+
+1. In Vercel, choose **Add New → Project** and import `yoericwsg/wedit-whatsapp-preview` from GitHub.
+2. Keep the project root as the root directory and use the **Other** framework preset. Vercel serves `index.html` and detects the `/api` function automatically.
+3. Add these environment variables in **Project Settings → Environment Variables** with **Production only** selected, then deploy again. Do not expose publishing credentials to preview deployments:
 
 - `ANNOUNCEMENT_KEY`: generate a new random key for yourself. Do not reuse the key posted in chat; treat that one as exposed.
-- `GITHUB_TOKEN`: a fine-grained GitHub token restricted to this repository, with **Contents: Read and write** permission. Store it only in Netlify's environment-variable settings.
+- `GITHUB_TOKEN`: a fine-grained GitHub token restricted to this repository, with **Contents: Read and write** permission. Store it only in Vercel's environment-variable settings.
 
 Generate a key in PowerShell with:
 
@@ -100,14 +105,15 @@ $bytes = New-Object byte[] 32
 [Convert]::ToBase64String($bytes)
 ```
 
-The key is a shared publisher credential: only give it to people allowed to post. Do not put either secret in GitHub files, extension code, or `netlify.toml`. WEdit ships with publishing disabled until you configure your own function URL, so the entered key is never sent to an unverified host.
+The key is a shared publisher credential: only give it to people allowed to post. Do not put either secret in GitHub files or the website bundle. The publisher accepts same-origin requests, validates HTTPS links and field sizes, keeps the latest 30 posts, and never returns the GitHub token to the page. The deployed Vercel URL becomes the public announcements page; the WEdit News panel continues reading the same public feed.
 
 ## Project files
 
 - `manifest.json` — Manifest V3 metadata and WhatsApp Web match.
 - `content.js` — extension content script.
-- `background.js` — fetches the public feed and sends keyed publish requests to the fixed publisher endpoint.
-- `netlify/functions/publish-announcement.mjs` — validates keyed announcement posts and commits them to the GitHub feed.
+- `background.js` — fetches the public announcement feed for the extension.
+- `api/announcements.js` — Vercel function for reading and key-protected publishing.
+- `index.html` — public announcements page and simple publisher form.
 - `wedit.user.js` — Tampermonkey-ready userscript.
 - `announcements.json` and `CHANGELOG.md` — public update notes and feed.
 - `install.cmd` — opens the browser extensions page and repository folder.

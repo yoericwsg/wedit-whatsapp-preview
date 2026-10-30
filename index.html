@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0d1117">
+  <meta name="description" content="Official WEdit announcements and release updates.">
+  <title>WEdit — Announcements</title>
+  <style>
+    :root{color-scheme:dark;--bg:#0b1013;--panel:#121a1e;--line:#26353b;--text:#edf4f5;--muted:#a0b2b7;--mint:#57dfb0;--blue:#82bbff}
+    *{box-sizing:border-box}body{margin:0;background:radial-gradient(900px 500px at 85% -10%,#15463855,transparent),var(--bg);color:var(--text);font:15px/1.6 Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif}
+    main{width:min(900px,calc(100% - 32px));margin:0 auto;padding:48px 0 80px}.top{display:flex;justify-content:space-between;align-items:center;gap:20px;margin-bottom:44px}.brand{font-weight:900;letter-spacing:-.04em;font-size:20px}.brand span{color:var(--mint)}.tag{color:var(--muted);font-size:12px}.hero{margin-bottom:26px}.eyebrow{color:var(--mint);font-weight:800;text-transform:uppercase;letter-spacing:.15em;font-size:11px}.hero h1{font-size:clamp(36px,7vw,64px);letter-spacing:-.06em;line-height:1.02;margin:10px 0}.hero p{color:var(--muted);max-width:610px;margin:12px 0}.grid{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(260px,.8fr);gap:16px;align-items:start}.card{border:1px solid var(--line);border-radius:18px;background:linear-gradient(155deg,#172125,#101619);padding:20px;box-shadow:0 16px 40px #0003}.section-title{font-size:14px;font-weight:850;margin:0 0 12px}.feed{display:grid;gap:11px}.post{border:1px solid var(--line);border-radius:14px;padding:15px;background:#0d1417}.post h2{font-size:16px;line-height:1.3;margin:0}.date{color:var(--muted);font-size:11px;margin-top:5px}.body{white-space:pre-wrap;overflow-wrap:anywhere;margin:10px 0 0;color:#d5e1e3;font-size:13px}.post a{display:inline-block;margin-top:10px;color:var(--blue);font-weight:750;font-size:12px}.empty,.status,.fine{color:var(--muted);font-size:12px}.form{display:grid;gap:9px}.form label{font-size:11px;font-weight:750;color:#c6d3d5}.form input,.form textarea{width:100%;border:1px solid #304149;border-radius:10px;background:#0b1114;color:var(--text);font:inherit;font-size:13px;padding:10px;outline:none}.form input:focus,.form textarea:focus{border-color:var(--mint);box-shadow:0 0 0 3px #57dfb01c}.form textarea{min-height:115px;resize:vertical}.button{border:0;border-radius:10px;background:var(--mint);color:#07271d;font:inherit;font-size:13px;font-weight:900;padding:11px;cursor:pointer}.button:disabled{opacity:.6;cursor:wait}.status{min-height:19px;margin:0}.fine{font-size:10px;line-height:1.5;margin:3px 0 0}.foot{border-top:1px solid var(--line);margin-top:28px;padding-top:15px;color:var(--muted);font-size:11px;display:flex;justify-content:space-between;gap:12px}.foot a{color:var(--mint)}
+    @media(max-width:720px){main{padding-top:26px}.grid{grid-template-columns:1fr}.top{margin-bottom:30px}.tag{max-width:150px;text-align:right}}
+  </style>
+</head>
+<body>
+  <main>
+    <header class="top"><div class="brand"><span>W</span> WEdit</div><div class="tag">Official announcements</div></header>
+    <section class="hero"><div class="eyebrow">News & releases</div><h1>What’s new.</h1><p>Product news, release notes, and helpful updates from WEdit. Posts here also appear in the News panel.</p></section>
+    <div class="grid">
+      <section class="card" aria-labelledby="feed-heading"><h2 class="section-title" id="feed-heading">Latest announcements</h2><div class="feed" id="feed" aria-live="polite"><p class="empty">Loading announcements…</p></div></section>
+      <section class="card" aria-labelledby="publish-heading"><h2 class="section-title" id="publish-heading">Publish an announcement</h2><form class="form" id="publish-form">
+        <label for="title">Title</label><input id="title" name="title" maxlength="140" required placeholder="Short, clear headline">
+        <label for="message">Message</label><textarea id="message" name="message" maxlength="4000" required placeholder="Write the update people need to know"></textarea>
+        <label for="link">Link (optional)</label><input id="link" name="link" type="url" placeholder="https://…">
+        <label for="key">Publishing key</label><input id="key" name="key" type="password" autocomplete="off" maxlength="256" required placeholder="Private publisher key">
+        <button class="button" id="publish" type="submit">Publish announcement</button><p class="status" id="status" role="status"></p>
+        <p class="fine">The key is sent to this site’s secure publishing function. It is not saved in the page or posted in the public feed.</p>
+      </form></section>
+    </div>
+    <footer class="foot"><span>WEdit • local preview tools</span><a href="https://github.com/yoericwsg/wedit-whatsapp-preview">Source and guides</a></footer>
+  </main>
+  <script>
+    const feedNode=document.querySelector('#feed');
+    const statusNode=document.querySelector('#status');
+    const form=document.querySelector('#publish-form');
+    const button=document.querySelector('#publish');
+    function renderFeed(feed){
+      feedNode.replaceChildren();
+      const posts=Array.isArray(feed?.announcements)?feed.announcements:[];
+      if(!posts.length){const empty=document.createElement('p');empty.className='empty';empty.textContent='No announcements yet.';feedNode.append(empty);return;}
+      for(const post of posts.slice(0,30)){
+        const card=document.createElement('article');card.className='post';
+        const title=document.createElement('h2');title.textContent=post.title||'Announcement';card.append(title);
+        const date=document.createElement('div');date.className='date';const parsed=Date.parse(post.publishedAt||'');date.textContent=Number.isFinite(parsed)?new Date(parsed).toLocaleString():'WEdit update';card.append(date);
+        const body=document.createElement('p');body.className='body';body.textContent=post.body||'';card.append(body);
+        if(typeof post.url==='string'&&post.url.startsWith('https://')){const link=document.createElement('a');link.href=post.url;link.target='_blank';link.rel='noopener noreferrer';link.textContent='Open link ↗';card.append(link);}
+        feedNode.append(card);
+      }
+    }
+    async function refreshFeed(){
+      try{const response=await fetch('/api/announcements',{cache:'no-store'});const data=await response.json();if(!response.ok)throw new Error(data.error||'Feed unavailable.');renderFeed(data);}
+      catch(error){feedNode.replaceChildren();const message=document.createElement('p');message.className='empty';message.textContent=error.message||'Feed unavailable.';feedNode.append(message);}
+    }
+    form.addEventListener('submit',async event=>{
+      event.preventDefault();button.disabled=true;statusNode.textContent='Checking key and publishing…';
+      const fields=new FormData(form);
+      const announcement={title:String(fields.get('title')||'').trim(),body:String(fields.get('message')||'').trim()};
+      const link=String(fields.get('link')||'').trim();if(link)announcement.url=link;
+      try{const response=await fetch('/api/announcements',{method:'POST',headers:{'Content-Type':'application/json',Authorization:`Bearer ${String(fields.get('key')||'')}`},body:JSON.stringify({announcement})});const data=await response.json();if(!response.ok)throw new Error(data.error||'Could not publish.');form.reset();statusNode.textContent='Published. The post is now in News.';await refreshFeed();}
+      catch(error){statusNode.textContent=error.message||'Could not publish. Try again.';}
+      finally{button.disabled=false;}
+    });
+    refreshFeed();
+  </script>
+</body>
+</html>

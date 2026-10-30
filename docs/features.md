@@ -32,11 +32,15 @@ A full backup can include preview text, uploaded media, and the current theme. I
 
 Open **News** and use **Play interface sound effects** to turn the small, locally generated sounds on or off. Sounds run only after a WEdit interaction and use the browser's Web Audio API; WEdit downloads no sound files.
 
+## Quick hide
+
+Select **Quick hide** in the panel or press **Alt+Shift+H**. WEdit restores the original text for active previews, removes its message buttons and media overlays, and hides the panel and launcher. Press **Alt+Shift+H** again to restore the local previews. This is a temporary display toggle; saved preview records remain in local storage.
+
 ## Changelog and announcements
 
 Open **Changelog** for version notes. **News** reads the public `announcements.json` feed from this repository when opened and refreshes every 15 minutes while News remains selected in a visible tab. The feed renders plain text and HTTPS links only.
 
-To post a message, open **News**, fill the title and body, then select **Build announcement file**. Choose **Copy feed file**, open the GitHub editor, replace the whole file text with the copied JSON, and commit to `main`. The composer keeps the existing posts in the feed. Sign in with an account that has repository write access. Users see the post on their next refresh. Feed edits are public, so keep private details out of announcements.
+To publish, use the separate Vercel announcements site. Enter the private publisher key there and choose **Publish announcement**. The site keeps the GitHub write token on the server and preserves the latest 30 feed items. Feed posts are public, so keep private details out of announcements.
 
 ## Local-only boundary
 
