@@ -21,7 +21,9 @@ The `install.cmd` launcher opens the extension page and project directory. Brows
 
 Tampermonkey will request access to `raw.githubusercontent.com` for the public announcement feed. WEdit only reads its fixed JSON feed there; it does not upload chat text or local previews.
 
-The script includes GitHub-hosted `@updateURL` and `@downloadURL` entries. Tampermonkey checks for new versions according to its own update settings; leaving automatic userscript updates enabled installs later releases from this repository. Updates appear after a new version is pushed to the repository's `main` branch. Existing userscripts keep their settings and saved local previews during an update. If you installed by copying and pasting the script, install it once from GitHub's **Raw** view so Tampermonkey has the update source.
+The script includes GitHub-hosted `@updateURL` and `@downloadURL` entries. Tampermonkey checks for new versions on its configured schedule. WEdit also checks the published version when WhatsApp Web loads; for each new release, it opens the Tampermonkey update screen once and shows an **Open update** button in WEdit. Existing userscripts keep their settings and saved local previews during an update. If you installed by copying and pasting, install once from GitHub's **Raw** view to establish the update source.
+
+For an immediate check, use **Check for userscript updates** from the Tampermonkey popup. A code release must increase the userscript `@version` and `version.json`; announcement-only edits do not trigger a code update.
 
 The userscript header limits execution to `https://web.whatsapp.com/*`. Avoid running both the userscript and unpacked extension simultaneously because each would add its own panel and observers.
 

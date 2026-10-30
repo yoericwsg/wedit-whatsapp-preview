@@ -4,6 +4,8 @@
 
 Edit `content.js`, visit `chrome://extensions/` or `edge://extensions/`, and press the extension card's reload button. Then reload WhatsApp Web. For Tampermonkey, edit `wedit.user.js` and refresh the WhatsApp Web tab.
 
+When publishing a userscript code change, increase `@version` in `wedit.user.js` and the value in `version.json` together. The installed script reads the small version file on WhatsApp Web page load; when the published version is newer, it opens the Tampermonkey update screen once for that version and displays an **Open update** button. Tampermonkey's own scheduled update check remains enabled as a second route.
+
 ## Message discovery
 
 WEdit watches WhatsApp Web's rendered DOM and locates selectable message text. Only loaded messages can be selected or restored on screen. If WhatsApp changes its DOM attributes or message layout, the selector constants near the top of `content.js` may need updating.

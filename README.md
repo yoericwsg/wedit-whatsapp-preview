@@ -48,7 +48,7 @@ Enable **Developer mode** → **Load unpacked** → select this repository folde
 3. In GitHub, open the **Raw** view; Tampermonkey should offer to install the userscript. If it displays source text, copy it into Tampermonkey's **Create a new script** editor, replace the starter text, and save.
 4. Reload WhatsApp Web.
 
-The userscript is configured to check this repository for updates through Tampermonkey. Keep userscript automatic updates enabled in Tampermonkey; it checks on its configured schedule. Updates become available after a new version is pushed to `main`.
+The userscript checks this repository's published version when WhatsApp Web loads. When newer code is available, it opens Tampermonkey's update screen once for that version and leaves an **Open update** button in WEdit. Tampermonkey also checks on its configured schedule; a code release must increase the userscript `@version` and `version.json` together.
 
 Tampermonkey asks for permission to contact `raw.githubusercontent.com` so the News tab can read the public announcement feed. No WhatsApp content or local previews are sent with that request.
 

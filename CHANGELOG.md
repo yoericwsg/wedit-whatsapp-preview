@@ -1,5 +1,9 @@
 # Changelog
 
+## 3.2.1 — 2026-10-30
+
+- Added a Tampermonkey page-load check that opens the update screen once per new version and leaves an update button in WEdit.
+
 ## 3.2.0 — 2026-10-30
 
 - Added a live text preview, character count, and reset-to-original draft control.

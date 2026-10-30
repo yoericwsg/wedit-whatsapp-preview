@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         WEdit — WhatsApp Local Preview Editor
 // @namespace    local.wedit.preview
-// @version      3.2.0
+// @version      3.2.1
 // @description  Customizable local WhatsApp preview studio with themes and full backup/restore.
 // @match        https://web.whatsapp.com/*
 // @run-at       document-idle
@@ -19,6 +19,8 @@
   const THEME_STORE_KEY = 'wedit-theme-v1';
   const SOUND_STORE_KEY = 'wedit-sounds-v1';
   const ANNOUNCEMENTS_URL = 'https://raw.githubusercontent.com/yoericwsg/wedit-whatsapp-preview/main/announcements.json';
+  const RELEASE_INFO_URL = 'https://raw.githubusercontent.com/yoericwsg/wedit-whatsapp-preview/main/version.json';
+  const USERSCRIPT_URL = 'https://raw.githubusercontent.com/yoericwsg/wedit-whatsapp-preview/main/wedit.user.js';
   const PANEL_ID = 'wedit-panel';
   const LAUNCHER_ID = 'wedit-launcher';
   const SELECTOR_TEXT = '[data-testid="selectable-text"], .selectable-text';
@@ -26,13 +28,21 @@
   const QUOTED = '[data-testid="quoted-message"], .quoted-message, [data-testid="quoted-message-container"]';
   const CHANGELOG_ENTRIES = [
     {
+      version: '3.2.1',
+      date: '2026-10-30',
+      title: 'Faster Tampermonkey update notices',
+      notes: [
+        'WEdit now checks the published userscript version when WhatsApp Web loads and offers a direct Tampermonkey update button.'
+      ]
+    },
+    {
       version: '3.2.0',
       date: '2026-10-30',
       title: 'Better editing, announcements, and stickers',
       notes: [
-        'Added a live text preview, character count, and reset-to-original control.',
+        'Added a live text preview, character count, and reset-to-original draft control.',
         'Added a guided announcement composer that prepares the complete feed file for publishing.',
-        'Added a reusable sticker shelf with multi-file and folder import for WebP, PNG, GIF, and other image stickers.'
+        'Added a reusable local sticker shelf with multi-file and folder import.'
       ]
     },
     {
@@ -398,7 +408,7 @@
     s.id = STYLE_ID;
 
     s.textContent = `
-      #${LAUNCHER_ID},#${PANEL_ID},.wedit-inline,#wedit-toast {
+      #${LAUNCHER_ID},#${PANEL_ID},.wedit-inline,#wedit-toast,#wedit-update-notice {
         font-family:Inter,ui-sans-serif,system-ui,-apple-system,
         BlinkMacSystemFont,"Segoe UI",sans-serif!important
       }
@@ -951,6 +961,23 @@
         color:var(--wedit-text);font-size:12px;box-shadow:0 12px 30px #0005
       }
 
+      #wedit-update-notice {
+        position:fixed;z-index:1000001;right:22px;bottom:78px;
+        display:flex;align-items:center;gap:10px;max-width:min(440px,calc(100vw - 28px));
+        padding:12px;border:1px solid #45d5a4;border-radius:13px;
+        background:#142128;color:#e7f0f3;font-size:12px;
+        box-shadow:0 14px 36px #0007
+      }
+
+      #wedit-update-notice span {flex:1;line-height:1.45}
+      #wedit-update-notice button {
+        border:0;border-radius:8px;padding:8px 10px;background:#45d5a4;
+        color:#102820;font:inherit;font-weight:800;cursor:pointer;white-space:nowrap
+      }
+      #wedit-update-notice .wedit-update-close {
+        padding:5px 7px;background:transparent;color:#e7f0f3;font-size:16px
+      }
+
       #${PANEL_ID}.wedit-glass .wedit-context,
       #${PANEL_ID}.wedit-glass .wedit-item,
       #${PANEL_ID}.wedit-glass .wedit-theme-card,
@@ -1383,7 +1410,7 @@
               <div class="wedit-label">Release notes</div>
               <div class="wedit-heading-title">Changelog</div>
             </div>
-            <span class="wedit-live-dot">3.2.0</span>
+            <span class="wedit-live-dot">3.2.1</span>
           </div>
           <div class="wedit-changelog-list" id="wedit-changelog-list"></div>
         </section>
@@ -2665,6 +2692,88 @@
     window.setTimeout(() => toast.remove(), 2800);
   }
 
+  function isNewerVersion(candidate, installed) {
+    if (!/^\d+\.\d+\.\d+$/.test(candidate) ||
+        !/^\d+\.\d+\.\d+$/.test(installed)) return false;
+    const next = candidate.split('.').map(Number);
+    const current = installed.split('.').map(Number);
+    for (let index = 0; index < 3; index++) {
+      if (next[index] > current[index]) return true;
+      if (next[index] < current[index]) return false;
+    }
+    return false;
+  }
+
+  function showUpdateNotice(version) {
+    document.getElementById('wedit-update-notice')?.remove();
+
+    const notice = document.createElement('div');
+    notice.id = 'wedit-update-notice';
+    notice.setAttribute('role', 'status');
+
+    const message = document.createElement('span');
+    message.textContent = `WEdit ${version} is ready. Open Tampermonkey to install the update.`;
+
+    const update = document.createElement('button');
+    update.type = 'button';
+    update.textContent = 'Open update';
+    update.addEventListener('click', () => {
+      try {
+        GM_openInTab(USERSCRIPT_URL, { active: true, insert: true });
+      } catch (_) {
+        window.open(USERSCRIPT_URL, '_blank', 'noopener');
+      }
+    });
+
+    const close = document.createElement('button');
+    close.type = 'button';
+    close.className = 'wedit-update-close';
+    close.textContent = '×';
+    close.setAttribute('aria-label', 'Dismiss update notice');
+    close.addEventListener('click', () => notice.remove());
+
+    notice.append(message, update, close);
+    document.body.appendChild(notice);
+  }
+
+  function checkForUserscriptUpdate() {
+    if (
+      typeof GM_info === 'undefined' ||
+      typeof GM_xmlhttpRequest !== 'function' ||
+      !GM_info.script?.version
+    ) return;
+
+    GM_xmlhttpRequest({
+      method: 'GET',
+      url: `${RELEASE_INFO_URL}?check=${Date.now()}`,
+      headers: { Accept: 'application/json' },
+      timeout: 10000,
+      onload: response => {
+        if (response.status < 200 || response.status >= 300) return;
+        try {
+          const release = JSON.parse(response.responseText);
+          if (isNewerVersion(release.version, GM_info.script.version)) {
+            showUpdateNotice(release.version);
+            try {
+              const key = 'wedit-update-screen-opened';
+              if (
+                document.visibilityState === 'visible' &&
+                GM_getValue(key, '') !== release.version
+              ) {
+                GM_setValue(key, release.version);
+                GM_openInTab(USERSCRIPT_URL, { active: true, insert: true });
+              }
+            } catch (_) {
+              // Keep the in-page update button available if opening a tab fails.
+            }
+          }
+        } catch (_) {
+          // An invalid release marker should not affect WhatsApp or WEdit.
+        }
+      }
+    });
+  }
+
   function updateMediaStatus() {
     const status = document.getElementById('wedit-media-status');
     const urlInput = document.getElementById('wedit-media-url');
@@ -3662,6 +3771,7 @@
   function start() {
     addStyles();
     buildUI();
+    checkForUserscriptUpdate();
 
     document.addEventListener('click', handleClick, true);
 
