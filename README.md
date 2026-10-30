@@ -45,6 +45,8 @@ Enable **Developer mode** → **Load unpacked** → select this repository folde
 3. In GitHub, open the **Raw** view; Tampermonkey should offer to install the userscript. If it displays source text, copy it into Tampermonkey's **Create a new script** editor, replace the starter text, and save.
 4. Reload WhatsApp Web.
 
+The userscript is configured to check this repository for updates through Tampermonkey. Keep userscript automatic updates enabled in Tampermonkey; it checks on its configured schedule. Updates become available after a new version is pushed to `main`.
+
 The same script file is included as `content.js` for the extension build. Tampermonkey and the unpacked extension are two ways to load WEdit; do not enable both at once.
 
 ## Package for the Chrome Web Store

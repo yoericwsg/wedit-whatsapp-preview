@@ -1,8 +1,10 @@
 // ==UserScript==
 // @name         WEdit — WhatsApp Local Preview Editor
 // @namespace    local.wedit.preview
-// @version      3.0.0
+// @version      3.0.1
 // @description  Customizable local WhatsApp preview studio with themes and full backup/restore.
+// @updateURL    https://raw.githubusercontent.com/yoericwsg/wedit-whatsapp-preview/main/wedit.user.js
+// @downloadURL  https://raw.githubusercontent.com/yoericwsg/wedit-whatsapp-preview/main/wedit.user.js
 // @match        https://web.whatsapp.com/*
 // @run-at       document-idle
 // @grant        none
