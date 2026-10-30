@@ -5,9 +5,18 @@
   "description": "Customizable local WhatsApp preview editor with themes and backup/restore.",
   "content_scripts": [
     {
-      "matches": ["https://web.whatsapp.com/*"],
-      "js": ["content.js"],
+      "matches": [
+        "https://web.whatsapp.com/*"
+      ],
+      "js": [
+        "content.js"
+      ],
       "run_at": "document_idle"
     }
-  ]
+  ],
+  "icons": {
+    "16": "icons/wedit-16.png",
+    "48": "icons/wedit-48.png",
+    "128": "icons/wedit-128.png"
+  }
 }
