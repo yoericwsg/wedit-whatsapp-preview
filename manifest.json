@@ -1,0 +1,13 @@
+{
+  "manifest_version": 3,
+  "name": "WEdit — WhatsApp Local Preview Editor",
+  "version": "3.0.0",
+  "description": "Customizable local WhatsApp preview editor with themes and backup/restore.",
+  "content_scripts": [
+    {
+      "matches": ["https://web.whatsapp.com/*"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}
