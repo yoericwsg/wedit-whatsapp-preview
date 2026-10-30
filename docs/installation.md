@@ -19,6 +19,8 @@ The `install.cmd` launcher opens the extension page and project directory. Brows
 3. If Tampermonkey does not open its install screen, copy the raw file into **Create a new script** and save.
 4. Reload WhatsApp Web.
 
+Tampermonkey will request access to `raw.githubusercontent.com` for the public announcement feed. WEdit only reads its fixed JSON feed there; it does not upload chat text or local previews.
+
 The script includes GitHub-hosted `@updateURL` and `@downloadURL` entries. Tampermonkey checks for new versions according to its own update settings; leaving automatic userscript updates enabled installs later releases from this repository. Updates appear after a new version is pushed to the repository's `main` branch. Existing userscripts keep their settings and saved local previews during an update. If you installed by copying and pasting the script, install it once from GitHub's **Raw** view so Tampermonkey has the update source.
 
 The userscript header limits execution to `https://web.whatsapp.com/*`. Avoid running both the userscript and unpacked extension simultaneously because each would add its own panel and observers.

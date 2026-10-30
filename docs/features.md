@@ -18,6 +18,16 @@ Choose one of eight presets, edit the custom color controls, or enable the Liqui
 
 A full backup can include preview text, uploaded media, and the current theme. Import can merge the saved previews or replace the current saved set. Restore-all removes WEdit's saved preview records and restores originals where those messages are loaded.
 
+## Sound effects
+
+Open **News** and use **Play interface sound effects** to turn the small, locally generated sounds on or off. Sounds run only after a WEdit interaction and use the browser's Web Audio API; WEdit downloads no sound files.
+
+## Changelog and announcements
+
+Open **Changelog** for version notes. **News** reads the public `announcements.json` feed from this repository when opened and refreshes every 15 minutes while News remains selected in a visible tab. The feed renders plain text and HTTPS links only.
+
+To post a message, choose **Post an announcement** and edit `announcements.json` on GitHub. Sign in with an account that has write access to the repository. Add an object to its `announcements` array with a `title`, an ISO `publishedAt` date, a `body`, and an optional HTTPS `url`; then commit the change to `main`. WEdit users see it on their next refresh. Feed edits are public, so keep private details out of announcements.
+
 ## Local-only boundary
 
 WEdit does not send or edit WhatsApp messages. The preview exists only in the browser view where WEdit is installed and its local storage is available.

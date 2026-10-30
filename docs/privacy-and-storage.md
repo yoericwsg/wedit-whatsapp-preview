@@ -11,7 +11,7 @@ WEdit has no AI features, user account, analytics, backend, or message transport
 
 ## Network behavior
 
-The extension declares no extension permissions. It runs as a content script only on `https://web.whatsapp.com/*`. WEdit itself has no server connection. If a user supplies a direct media URL, the browser requests that URL to render the preview. Tampermonkey checks the GitHub raw userscript URL for published updates; GitHub receives those ordinary update requests. This update feed carries the script file only, not WEdit preview data.
+The extension runs its editor content script only on `https://web.whatsapp.com/*`. It also has a narrowly scoped host permission for `raw.githubusercontent.com/yoericwsg/*` to read the fixed public announcement feed. The extension background worker requests only the WEdit `announcements.json` URL and returns the text to the News tab. It does not send chat text or local preview data. Tampermonkey uses the same fixed feed through its `raw.githubusercontent.com` connection grant and checks the GitHub raw userscript URL for published code updates. GitHub receives those ordinary requests. If a user supplies a direct media URL, the browser requests that URL to render the preview.
 
 ## Data lifecycle
 

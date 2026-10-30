@@ -21,6 +21,28 @@ Message keys prefer WhatsApp's `data-id`. When that attribute is unavailable, WE
 
 Run `scripts/package-webstore.cmd` from the repo or double-click it. The output is `dist/wedit-web-store.zip`. Increase `manifest.json`'s version before uploading a later release. The store package should contain only runtime files, not the repo history or docs.
 
+## Publish an announcement
+
+Choose **Post an announcement** in WEdit or open `announcements.json` on GitHub using an account with repository write access. Add a new object to the `announcements` array. Each item needs a short `title`, an ISO 8601 `publishedAt` value, and plain-text `body`; an optional `url` must use HTTPS. Commit the file to `main`. Installed clients check while their News tab is selected and visible, then again every 15 minutes. The feed is public and contains no authentication or private storage.
+
+Example feed:
+
+```json
+{
+  "schemaVersion": 1,
+  "announcements": [
+    {
+      "title": "Announcement title",
+      "publishedAt": "2026-10-30T12:00:00Z",
+      "body": "Write the announcement text here.",
+      "url": "https://example.com/details"
+    }
+  ]
+}
+```
+
+Keep `schemaVersion` set to `1`. Add new posts at the start of the array; WEdit displays the newest dated posts first and reads up to 30 entries.
+
 ## Troubleshooting
 
 - Panel missing: reload WhatsApp Web and confirm WEdit is enabled on the extensions page or in Tampermonkey.

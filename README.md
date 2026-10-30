@@ -4,7 +4,7 @@
 
 ![WEdit editor screenshot running the real content script with fictional sample messages](docs/images/editor-demo.png)
 
-WEdit changes the visible page in your browser. It does not send messages, change WhatsApp's servers, or change what another person sees. There is no AI, account, analytics, backend, or message-sync service.
+WEdit changes the visible page in your browser. It does not send messages, change WhatsApp's servers, or change what another person sees. There is no AI, account, analytics, WEdit server, or message-sync service. The News tab reads public announcement text from this repository.
 
 ## What it does
 
@@ -13,6 +13,7 @@ WEdit changes the visible page in your browser. It does not send messages, chang
 - Attach a local image, GIF, sticker-style image, or video preview, or use a direct HTTP(S) media URL.
 - Choose eight themes, adjust a custom palette, enable Liquid Glass, and import/export theme JSON.
 - Export or import a full JSON backup, including saved previews, the selected theme, and uploaded media.
+- Read the in-panel changelog and public announcements; optional interface sounds are controlled by a toggle.
 - Toggle the panel with **Alt+Shift+E**. The editor also advertises **Ctrl/⌘+Enter** to apply the current edit.
 
 ![WEdit theme UI preview](docs/images/themes-preview.svg)
@@ -47,13 +48,15 @@ Enable **Developer mode** → **Load unpacked** → select this repository folde
 
 The userscript is configured to check this repository for updates through Tampermonkey. Keep userscript automatic updates enabled in Tampermonkey; it checks on its configured schedule. Updates become available after a new version is pushed to `main`.
 
+Tampermonkey asks for permission to contact `raw.githubusercontent.com` so the News tab can read the public announcement feed. No WhatsApp content or local previews are sent with that request.
+
 The same script file is included as `content.js` for the extension build. Tampermonkey and the unpacked extension are two ways to load WEdit; do not enable both at once.
 
 ## Package for the Chrome Web Store
 
 Prerequisites: a registered Chrome Web Store developer account and a completed store listing. The store package is separate from this repository bundle.
 
-Run [`package-webstore.cmd`](scripts/package-webstore.cmd). It creates `dist/wedit-web-store.zip` containing the manifest, content script, and icons, with `manifest.json` at the ZIP root. Upload that ZIP from the [Chrome Web Store Developer Dashboard](https://chrome.google.com/webstore/devconsole/), complete the listing and privacy fields, and submit it for review. Store submissions need listing images and a screenshot. The PNG above shows the real WEdit interface running from `content.js` on a local demo page with fictional sample messages; it is not from a signed-in WhatsApp account. The SVGs below are illustrative panels.
+Run [`package-webstore.cmd`](scripts/package-webstore.cmd). It creates `dist/wedit-web-store.zip` containing the manifest, content script, announcement worker, and icons, with `manifest.json` at the ZIP root. Upload that ZIP from the [Chrome Web Store Developer Dashboard](https://chrome.google.com/webstore/devconsole/), complete the listing and privacy fields, and submit it for review. Store submissions need listing images and a screenshot. The PNG above shows the WEdit interface running on a local demo page with fictional sample messages; it is not from a signed-in WhatsApp account. The SVGs below are illustrative panels.
 
 ## Data and privacy
 
@@ -61,6 +64,7 @@ Run [`package-webstore.cmd`](scripts/package-webstore.cmd). It creates `dist/wed
 - Uploaded media is stored in IndexedDB under the WhatsApp Web origin.
 - A full backup may contain message text and uploaded media. Keep it where you want that data to remain.
 - If you enter a media URL, the browser loads that URL to show the preview.
+- The News tab requests the public `announcements.json` file from GitHub when opened and every 15 minutes while the tab remains active. This request contains no chat text or preview data.
 - Clearing the browser's WhatsApp Web site data may remove local WEdit records and media.
 - WEdit does not transmit your edits or backups to a WEdit server.
 
@@ -77,11 +81,15 @@ See [Privacy and storage](docs/privacy-and-storage.md) for details.
 
 See [Installation](docs/installation.md), [Feature guide](docs/features.md), and [Advanced use](docs/advanced-use.md).
 
+The public [changelog](CHANGELOG.md) records releases. Announcement posts are stored in [`announcements.json`](announcements.json); use **Post an announcement** in WEdit's News tab to open the GitHub editor. Add the post and commit the file to `main` for clients to fetch it.
+
 ## Project files
 
 - `manifest.json` — Manifest V3 metadata and WhatsApp Web match.
 - `content.js` — extension content script.
+- `background.js` — fetches the fixed public announcement feed for the extension.
 - `wedit.user.js` — Tampermonkey-ready userscript.
+- `announcements.json` and `CHANGELOG.md` — public update notes and feed.
 - `install.cmd` — opens the browser extensions page and repository folder.
 - `scripts/package-webstore.cmd` — builds a minimal Web Store ZIP.
 - `docs/` — install, feature, privacy, and advanced guides, a local UI demo page, a real interface screenshot, and illustrative panel artwork.
