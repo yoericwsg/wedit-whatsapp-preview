@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         WEdit — WhatsApp Local Preview Editor
 // @namespace    local.wedit.preview
-// @version      3.1.0
+// @version      3.2.0
 // @description  Customizable local WhatsApp preview studio with themes and full backup/restore.
 // @match        https://web.whatsapp.com/*
 // @run-at       document-idle
@@ -14,6 +14,7 @@
   const STORE_KEY = 'wedit-local-preview-v1';
   const DB_NAME = 'wedit-local-preview-media';
   const DB_STORE = 'media';
+  const STICKER_KEY_PREFIX = 'wedit-sticker:';
   const STYLE_ID = 'wedit-v3-styles';
   const THEME_STORE_KEY = 'wedit-theme-v1';
   const SOUND_STORE_KEY = 'wedit-sounds-v1';
@@ -25,13 +26,21 @@
   const QUOTED = '[data-testid="quoted-message"], .quoted-message, [data-testid="quoted-message-container"]';
   const CHANGELOG_ENTRIES = [
     {
+      version: '3.2.0',
+      date: '2026-10-30',
+      title: 'Better editing, announcements, and stickers',
+      notes: [
+        'Added a live text preview, character count, and reset-to-original control.',
+        'Added a guided announcement composer that prepares the complete feed file for publishing.',
+        'Added a reusable sticker shelf with multi-file and folder import for WebP, PNG, GIF, and other image stickers.'
+      ]
+    },
+    {
       version: '3.1.0',
       date: '2026-10-30',
       title: 'Announcements and sound',
       notes: [
-        'Added an announcements feed with manual refresh and periodic checks while the tab is open.',
-        'Added optional local interface sounds with an on/off control.',
-        'Added an in-panel changelog.'
+        'Added public announcements, optional local interface sounds, and an in-panel changelog.'
       ]
     },
     {
@@ -134,6 +143,7 @@
   let activeKey = null;
   let activeRoot = null;
   let activeText = null;
+  let activeOriginalText = '';
   let searchTerm = '';
   let panelOpen = false;
   let enhanceQueued = false;
@@ -141,6 +151,8 @@
   let mediaDBPromise = null;
   let activeTab = 'editor';
   let announcementsRequest = null;
+  let announcementFeedItems = null;
+  let announcementFeedReady = false;
   let audioContext = null;
 
   const objectURLs = new Map();
@@ -488,6 +500,26 @@
         min-height:76px;line-height:1.5;resize:vertical
       }
 
+      #${PANEL_ID} .wedit-editor-toolbar {
+        display:flex;justify-content:space-between;align-items:center;gap:8px;
+        margin-top:5px;color:var(--wedit-muted);font-size:10px
+      }
+
+      #${PANEL_ID} .wedit-live-preview {
+        margin-top:8px;padding:10px;border:1px solid var(--wedit-border);
+        border-radius:10px;background:var(--wedit-surface);min-height:52px
+      }
+
+      #${PANEL_ID} .wedit-live-preview small {
+        color:var(--wedit-muted);font-size:9px;font-weight:800;
+        letter-spacing:.4px;text-transform:uppercase
+      }
+
+      #${PANEL_ID} .wedit-live-preview p {
+        margin:6px 0 0;color:var(--wedit-text);font-size:12px;
+        line-height:1.5;white-space:pre-wrap;overflow-wrap:anywhere
+      }
+
       #${PANEL_ID} textarea:focus,
       #${PANEL_ID} input:focus {
         border-color:#43d7a4;box-shadow:0 0 0 3px #43d7a41a
@@ -573,6 +605,8 @@
       }
 
       #${PANEL_ID} .wedit-sound-row input {accent-color:var(--wedit-accent)}
+      #${PANEL_ID} #wedit-announcement-publish-actions[hidden],
+      #${PANEL_ID} #wedit-announcement-json[hidden] {display:none!important}
 
       #${PANEL_ID} .wedit-helper {
         margin-top:8px;color:var(--wedit-muted);font-size:10px;line-height:1.5
@@ -852,6 +886,37 @@
 
       #${PANEL_ID} .wedit-sticker-icon {width:35px;height:35px;display:block}
 
+      #${PANEL_ID} .wedit-my-sticker-grid {
+        display:grid;grid-template-columns:repeat(4,minmax(0,1fr));
+        gap:7px;margin-top:7px
+      }
+
+      #${PANEL_ID} .wedit-my-sticker {
+        position:relative;min-width:0;padding:6px;border:1px solid var(--wedit-border);
+        border-radius:10px;background:var(--wedit-surface);color:var(--wedit-text);
+        text-align:center
+      }
+
+      #${PANEL_ID} .wedit-my-sticker-select {
+        width:100%;padding:0;border:0;background:transparent;color:inherit;
+        cursor:pointer;text-align:center;font:inherit
+      }
+
+      #${PANEL_ID} .wedit-my-sticker-select img {
+        display:block;width:100%;height:56px;object-fit:contain
+      }
+
+      #${PANEL_ID} .wedit-my-sticker-select span {
+        display:block;overflow:hidden;margin-top:4px;font-size:9px;
+        text-overflow:ellipsis;white-space:nowrap
+      }
+
+      #${PANEL_ID} .wedit-sticker-delete {
+        position:absolute;top:2px;right:2px;width:19px;height:19px;
+        border:0;border-radius:50%;background:#152128dd;color:#fff;
+        cursor:pointer;font-size:13px;line-height:19px
+      }
+
       .wedit-media-preview {
         display:block;clear:both;margin:5px 0 3px;
         max-width:min(280px,65vw);position:relative;overflow:hidden;
@@ -1018,7 +1083,7 @@
             <div class="wedit-kicker">WhatsApp Web utility</div>
             <div class="wedit-title">WEdit
               <span style="color:var(--wedit-accent);font-size:10px;letter-spacing:.6px">
-                STUDIO 3.1
+                STUDIO 3.2
               </span>
             </div>
           </div>
@@ -1069,9 +1134,20 @@
           <textarea id="wedit-replacement"
             placeholder="Write your local preview…" disabled></textarea>
 
+          <div class="wedit-editor-toolbar">
+            <span id="wedit-char-count">0 characters</span>
+            <button id="wedit-use-original" class="wedit-mini-link"
+              type="button" disabled>Reset draft to original</button>
+          </div>
+
+          <div class="wedit-live-preview" aria-live="polite">
+            <small>Preview · changes only after Apply</small>
+            <p id="wedit-live-preview-text">Select a message to preview your edit.</p>
+          </div>
+
           <div class="wedit-actions">
             <button class="wedit-btn wedit-primary" id="wedit-apply"
-              type="button" disabled>Apply preview</button>
+              type="button" disabled>Apply local preview</button>
             <button class="wedit-btn wedit-secondary" id="wedit-reset"
               type="button" disabled>Restore message</button>
           </div>
@@ -1112,8 +1188,31 @@
             preview. This stays in your browser and is never sent.
           </div>
 
-          <span class="wedit-label">Quick sticker pack</span>
+          <span class="wedit-label">Starter stickers</span>
           <div class="wedit-sticker-tray" id="wedit-sticker-tray"></div>
+
+          <div class="wedit-section-row">
+            <div class="wedit-section-title">My WhatsApp stickers</div>
+            <span id="wedit-sticker-count" class="wedit-count">0</span>
+          </div>
+          <div class="wedit-helper">
+            First save or export sticker images from WhatsApp to your device. Then choose WebP, PNG, JPG, or GIF files here. WEdit cannot read WhatsApp's private app storage. Tap a saved sticker to attach it to the selected local preview.
+          </div>
+          <div class="wedit-actions">
+            <button class="wedit-btn wedit-secondary" id="wedit-pick-stickers"
+              type="button">Choose sticker files</button>
+            <button class="wedit-btn wedit-secondary" id="wedit-pick-sticker-folder"
+              type="button">Import a folder</button>
+          </div>
+          <input id="wedit-sticker-files" type="file"
+            accept=".webp,.png,.jpg,.jpeg,.gif,.avif" multiple>
+          <input id="wedit-sticker-folder" type="file"
+            accept=".webp,.png,.jpg,.jpeg,.gif,.avif"
+            multiple webkitdirectory directory>
+          <div class="wedit-helper" id="wedit-sticker-import-status">
+            Choose up to 100 images, 5 MB each, and 60 MB total per import. Your sticker shelf stays on this device.
+          </div>
+          <div class="wedit-my-sticker-grid" id="wedit-my-sticker-grid"></div>
 
           <span class="wedit-label">Upload media</span>
           <label class="wedit-filebox" for="wedit-file">
@@ -1284,7 +1383,7 @@
               <div class="wedit-label">Release notes</div>
               <div class="wedit-heading-title">Changelog</div>
             </div>
-            <span class="wedit-live-dot">3.1.0</span>
+            <span class="wedit-live-dot">3.2.0</span>
           </div>
           <div class="wedit-changelog-list" id="wedit-changelog-list"></div>
         </section>
@@ -1302,10 +1401,37 @@
             Announcements load from the public WEdit feed. They contain text and optional web links.
           </div>
           <div class="wedit-announcement-list" id="wedit-announcement-list"></div>
-          <a class="wedit-btn wedit-secondary wedit-wide"
-            id="wedit-manage-announcements"
-            href="https://github.com/yoericwsg/wedit-whatsapp-preview/edit/main/announcements.json"
-            target="_blank" rel="noopener noreferrer">Post an announcement</a>
+          <div class="wedit-section-row">
+            <div class="wedit-section-title">Create a post</div>
+          </div>
+          <div class="wedit-helper">
+            1. Fill in the fields. 2. Build the file and copy it. 3. Open GitHub, replace the file contents, and commit. Your post appears in News after refresh.
+          </div>
+          <label class="wedit-label" for="wedit-announcement-title">Title</label>
+          <input id="wedit-announcement-title" type="text" maxlength="140"
+            placeholder="Short announcement title">
+          <label class="wedit-label" for="wedit-announcement-body">Message</label>
+          <textarea id="wedit-announcement-body" maxlength="4000"
+            placeholder="Write the announcement people will see…"></textarea>
+          <label class="wedit-label" for="wedit-announcement-url">Link (optional · HTTPS)</label>
+          <input id="wedit-announcement-url" type="url"
+            placeholder="https://your-site.example/post">
+          <button class="wedit-btn wedit-primary wedit-wide"
+            id="wedit-build-announcement" type="button" disabled>
+            Build announcement file
+          </button>
+          <div class="wedit-helper" id="wedit-announcement-draft-status">
+            Open News to load the current feed before creating a post.
+          </div>
+          <textarea id="wedit-announcement-json" readonly hidden
+            aria-label="Ready-to-paste announcements JSON"></textarea>
+          <div class="wedit-actions" id="wedit-announcement-publish-actions" hidden>
+            <button class="wedit-btn wedit-secondary" id="wedit-copy-announcement"
+              type="button">Copy feed file</button>
+            <a class="wedit-btn wedit-primary" id="wedit-open-feed-editor"
+              href="https://github.com/yoericwsg/wedit-whatsapp-preview/edit/main/announcements.json"
+              target="_blank" rel="noopener noreferrer">Open GitHub editor</a>
+          </div>
           <label class="wedit-sound-row">
             <input id="wedit-sound-toggle" type="checkbox">
             <span>Play interface sound effects</span>
@@ -1338,6 +1464,46 @@
         playInterfaceSound('tap');
         refreshAnnouncements(true);
       });
+
+    for (const id of [
+      'wedit-announcement-title',
+      'wedit-announcement-body',
+      'wedit-announcement-url'
+    ]) {
+      panel.querySelector(`#${id}`).addEventListener('input', () => {
+        panel.querySelector('#wedit-announcement-json').hidden = true;
+        panel.querySelector('#wedit-announcement-publish-actions').hidden = true;
+        panel.querySelector('#wedit-announcement-draft-status').textContent =
+          'Your draft changed. Build the file again before copying it.';
+      });
+    }
+
+    panel.querySelector('#wedit-build-announcement')
+      .addEventListener('click', buildAnnouncementFile);
+
+    panel.querySelector('#wedit-copy-announcement')
+      .addEventListener('click', copyAnnouncementFile);
+
+    panel.querySelector('#wedit-pick-stickers')
+      .addEventListener('click', () =>
+        panel.querySelector('#wedit-sticker-files').click()
+      );
+
+    panel.querySelector('#wedit-pick-sticker-folder')
+      .addEventListener('click', () =>
+        panel.querySelector('#wedit-sticker-folder').click()
+      );
+
+    for (const input of [
+      panel.querySelector('#wedit-sticker-files'),
+      panel.querySelector('#wedit-sticker-folder')
+    ]) {
+      input.addEventListener('change', event => {
+        const files = Array.from(event.target.files || []);
+        event.target.value = '';
+        importUserStickers(files);
+      });
+    }
 
     panel.querySelector('#wedit-sound-toggle').checked = soundsEnabled();
     panel.querySelector('#wedit-sound-toggle')
@@ -1435,6 +1601,17 @@
         }
       });
 
+    panel.querySelector('#wedit-replacement')
+      .addEventListener('input', updateEditorPreview);
+
+    panel.querySelector('#wedit-use-original')
+      .addEventListener('click', () => {
+        const input = panel.querySelector('#wedit-replacement');
+        input.value = activeOriginalText;
+        updateEditorPreview();
+        input.focus();
+      });
+
     panel.querySelector('#wedit-file')
       .addEventListener('change', handleFileChoice);
 
@@ -1493,6 +1670,105 @@
     }
 
     if (tab === 'announcements') refreshAnnouncements(false);
+  }
+
+  function updateEditorPreview() {
+    const input = document.getElementById('wedit-replacement');
+    const preview = document.getElementById('wedit-live-preview-text');
+    const count = document.getElementById('wedit-char-count');
+    const resetDraft = document.getElementById('wedit-use-original');
+    if (!input || !preview || !count) return;
+
+    const value = input.value;
+    const length = Array.from(value).length;
+    count.textContent = `${length} character${length === 1 ? '' : 's'}`;
+    preview.textContent = value || '(Empty message text)';
+    if (resetDraft) resetDraft.disabled = !activeKey;
+  }
+
+  async function buildAnnouncementFile() {
+    const status = document.getElementById('wedit-announcement-draft-status');
+    const buildButton = document.getElementById('wedit-build-announcement');
+    if (buildButton) buildButton.disabled = true;
+    status.textContent = 'Refreshing the current feed so existing posts are kept…';
+    await refreshAnnouncements(false);
+
+    const title = document.getElementById('wedit-announcement-title').value.trim();
+    const body = document.getElementById('wedit-announcement-body').value.trim();
+    const rawURL = document.getElementById('wedit-announcement-url').value.trim();
+
+    if (!announcementFeedReady || !Array.isArray(announcementFeedItems)) {
+      status.textContent = 'Wait for the current feed to load, then try again.';
+      if (buildButton) buildButton.disabled = true;
+      return;
+    }
+    if (buildButton) buildButton.disabled = false;
+    if (!title || !body) {
+      status.textContent = 'Add a title and message before building the file.';
+      showToast('A title and announcement message are required.');
+      return;
+    }
+
+    let url = '';
+    if (rawURL) {
+      try {
+        const parsed = new URL(rawURL);
+        if (parsed.protocol !== 'https:') throw new Error('HTTPS required');
+        url = parsed.href;
+      } catch (_) {
+        status.textContent = 'The optional link must be a valid HTTPS address.';
+        showToast('Use a full https:// link or leave the link blank.');
+        return;
+      }
+    }
+
+    const announcement = {
+      title: title.slice(0, 140),
+      publishedAt: new Date().toISOString(),
+      body: body.slice(0, 4000)
+    };
+    if (url) announcement.url = url;
+
+    const feed = {
+      schemaVersion: 1,
+      announcements: [announcement, ...announcementFeedItems]
+        .slice(0, 30)
+        .map(item => ({
+          title: item.title,
+          publishedAt: item.publishedAt,
+          body: item.body,
+          ...(item.link ? { url: item.link } : {})
+        }))
+    };
+
+    const output = document.getElementById('wedit-announcement-json');
+    output.value = JSON.stringify(feed, null, 2);
+    output.hidden = false;
+    document.getElementById('wedit-announcement-publish-actions').hidden = false;
+    status.textContent =
+      'Ready. Copy this full file, open GitHub, replace the file contents, and commit to main.';
+    playInterfaceSound('success');
+  }
+
+  async function copyAnnouncementFile() {
+    const output = document.getElementById('wedit-announcement-json');
+    const status = document.getElementById('wedit-announcement-draft-status');
+    output.focus();
+    output.select();
+
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(output.value);
+      } else if (!document.execCommand('copy')) {
+        throw new Error('Copy command unavailable');
+      }
+      status.textContent =
+        'Feed file copied. Open the GitHub editor, select all, paste, and commit the change.';
+      showToast('Announcement feed copied to clipboard.');
+    } catch (_) {
+      status.textContent =
+        'The file is selected. Press Ctrl+C, then open GitHub, select all, paste, and commit.';
+    }
   }
 
   function soundsEnabled() {
@@ -1690,23 +1966,37 @@
   async function refreshAnnouncements(showFeedback) {
     const status = document.getElementById('wedit-announcements-status');
     if (announcementsRequest) return announcementsRequest;
+    const buildButton = document.getElementById('wedit-build-announcement');
+    if (!announcementFeedReady && buildButton) buildButton.disabled = true;
     if (status && showFeedback) status.textContent = 'Checking for announcements…';
 
     announcementsRequest = (async () => {
       try {
         const body = await requestAnnouncementText();
         const items = cleanAnnouncementFeed(body);
+        announcementFeedItems = items;
+        announcementFeedReady = true;
+        if (buildButton) buildButton.disabled = false;
         renderAnnouncements(items);
         if (status) {
           status.textContent = items.length
             ? `Updated just now · ${items.length} announcement${items.length === 1 ? '' : 's'}`
             : 'Feed is up to date. No announcements yet.';
         }
+        const draftStatus = document.getElementById('wedit-announcement-draft-status');
+        if (draftStatus && !document.getElementById('wedit-announcement-json')?.value) {
+          draftStatus.textContent = 'Feed ready. Write a title and message, then build the file.';
+        }
         if (showFeedback) playInterfaceSound('success');
       } catch (error) {
         console.warn('[WEdit] Announcement feed unavailable:', error);
+        announcementFeedReady = false;
+        if (buildButton) buildButton.disabled = true;
         if (status) status.textContent =
           'Could not load announcements. Check your connection and refresh.';
+        const draftStatus = document.getElementById('wedit-announcement-draft-status');
+        if (draftStatus) draftStatus.textContent =
+          'Could not read the existing feed. Refresh before creating a post so older announcements stay intact.';
         if (showFeedback) showToast('Could not refresh announcements.');
       } finally {
         announcementsRequest = null;
@@ -2428,6 +2718,175 @@
     updateMediaStatus();
   }
 
+  function stickerMimeFor(file) {
+    const extension = file.name.split('.').pop().toLowerCase();
+    const supported = {
+      webp: 'image/webp',
+      png: 'image/png',
+      jpg: 'image/jpeg',
+      jpeg: 'image/jpeg',
+      gif: 'image/gif',
+      avif: 'image/avif'
+    };
+    return supported[extension] || '';
+  }
+
+  async function getUserStickers() {
+    const db = await openMediaDB();
+    return new Promise((resolve, reject) => {
+      const range = IDBKeyRange.bound(
+        STICKER_KEY_PREFIX,
+        `${STICKER_KEY_PREFIX}\uffff`
+      );
+      const request = db.transaction(DB_STORE, 'readonly')
+        .objectStore(DB_STORE)
+        .getAll(range);
+      request.onsuccess = () => resolve(
+        request.result
+          .filter(item => item.blob instanceof Blob)
+          .sort((a, b) => (b.savedAt || 0) - (a.savedAt || 0))
+      );
+      request.onerror = () => reject(request.error || new Error('Could not read sticker shelf.'));
+    });
+  }
+
+  async function renderUserStickerShelf() {
+    const grid = document.getElementById('wedit-my-sticker-grid');
+    const count = document.getElementById('wedit-sticker-count');
+    if (!grid) return;
+
+    grid.replaceChildren();
+    try {
+      const stickers = await getUserStickers();
+      if (count) count.textContent = String(stickers.length);
+
+      if (!stickers.length) {
+        const empty = document.createElement('div');
+        empty.className = 'wedit-empty';
+        empty.textContent = 'Your imported stickers will show up here.';
+        grid.appendChild(empty);
+        return;
+      }
+
+      stickers.forEach(sticker => {
+        const card = document.createElement('div');
+        card.className = 'wedit-my-sticker';
+        card.title = `Use ${sticker.name} as a local preview sticker`;
+        const select = document.createElement('button');
+        select.type = 'button';
+        select.className = 'wedit-my-sticker-select';
+        select.setAttribute('aria-label', `Use sticker ${sticker.name}`);
+
+        const image = document.createElement('img');
+        image.alt = '';
+        image.loading = 'lazy';
+        const previousURL = objectURLs.get(sticker.key);
+        if (previousURL) URL.revokeObjectURL(previousURL);
+        const url = URL.createObjectURL(sticker.blob);
+        objectURLs.set(sticker.key, url);
+        image.src = url;
+
+        const name = document.createElement('span');
+        name.textContent = sticker.name.replace(/\.[^.]+$/, '');
+
+        const remove = document.createElement('button');
+        remove.type = 'button';
+        remove.className = 'wedit-sticker-delete';
+        remove.textContent = '×';
+        remove.setAttribute('aria-label', `Remove ${sticker.name}`);
+        remove.addEventListener('click', async event => {
+          event.stopPropagation();
+          await deleteMedia(sticker.key);
+          renderUserStickerShelf();
+        });
+
+        select.append(image, name);
+        card.append(select, remove);
+        select.addEventListener('click', () => {
+          if (!activeKey) {
+            showToast('Select a message first, then choose its sticker.');
+            return;
+          }
+          pendingFile = new File(
+            [sticker.blob],
+            sticker.name,
+            { type: sticker.type || sticker.blob.type || stickerMimeFor(sticker) }
+          );
+          document.getElementById('wedit-file').value = '';
+          document.getElementById('wedit-media-url').value = '';
+          document.getElementById('wedit-file-name').textContent =
+            `Selected sticker: ${sticker.name}`;
+          document.getElementById('wedit-sticker').checked = true;
+          updateMediaStatus();
+          showToast('Sticker selected. Choose Apply media preview to place it locally.');
+        });
+        grid.appendChild(card);
+      });
+    } catch (error) {
+      if (count) count.textContent = '—';
+      const empty = document.createElement('div');
+      empty.className = 'wedit-empty';
+      empty.textContent = 'Sticker storage is unavailable in this browser.';
+      grid.appendChild(empty);
+      console.warn('[WEdit] Could not render imported stickers:', error);
+    }
+  }
+
+  async function importUserStickers(files) {
+    const status = document.getElementById('wedit-sticker-import-status');
+    const imageFiles = files.filter(file => stickerMimeFor(file));
+    if (!imageFiles.length) {
+      if (status) status.textContent = 'No supported sticker images selected. Choose WebP, PNG, JPG, GIF, or AVIF files.';
+      return;
+    }
+
+    let imported = 0;
+    let skipped = files.length - imageFiles.length +
+      Math.max(0, imageFiles.length - 100);
+    let totalBytes = 0;
+    const selected = imageFiles.slice(0, 100);
+    if (status) status.textContent = `Importing ${selected.length} sticker images…`;
+
+    try {
+      for (const file of selected) {
+        if (file.size <= 0 || file.size > 5 * 1024 * 1024 ||
+            totalBytes + file.size > 60 * 1024 * 1024) {
+          skipped++;
+          continue;
+        }
+
+        const type = file.type.startsWith('image/')
+          ? file.type
+          : stickerMimeFor(file);
+        const normalized = new File([file], file.name, { type });
+        const key = `${STICKER_KEY_PREFIX}${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+        await putMedia(key, normalized);
+        imported++;
+        totalBytes += file.size;
+        if (status && imported % 5 === 0) {
+          status.textContent = `Importing stickers… ${imported} of ${selected.length}`;
+        }
+      }
+
+      await renderUserStickerShelf();
+      if (status) {
+        status.textContent = imported
+          ? `Imported ${imported} sticker${imported === 1 ? '' : 's'} to this device${skipped ? ` · skipped ${skipped}` : ''}.`
+          : `No stickers imported${skipped ? ` · skipped ${skipped}` : ''}. Each image must be 5 MB or smaller.`;
+      }
+      if (imported) {
+        playInterfaceSound('success');
+        showToast(`Added ${imported} sticker${imported === 1 ? '' : 's'} to your shelf.`);
+      }
+    } catch (error) {
+      if (status) status.textContent =
+        'Import stopped because browser storage is full or unavailable. Your saved stickers remain in the shelf.';
+      showToast('Could not finish importing stickers. Check browser storage.');
+      console.warn('[WEdit] Sticker import failed:', error);
+      await renderUserStickerShelf();
+    }
+  }
+
   function buildStickerTray(panel) {
     const tray = panel.querySelector('#wedit-sticker-tray');
 
@@ -2500,6 +2959,8 @@
 
       tray.appendChild(btn);
     });
+
+    renderUserStickerShelf();
   }
 
   function selectMessage(root, textNode) {
@@ -2513,6 +2974,7 @@
     const entry = edits[key];
     const original = entry?.originalText ?? safeText(textNode);
     const shown = entry?.replacement ?? safeText(textNode);
+    activeOriginalText = original;
 
     const context = document.getElementById('wedit-original');
     context.replaceChildren();
@@ -2528,6 +2990,7 @@
     const textarea = document.getElementById('wedit-replacement');
     textarea.disabled = false;
     textarea.value = shown;
+    updateEditorPreview();
 
     const urlInput = document.getElementById('wedit-media-url');
     urlInput.value = entry?.media?.kind === 'url'
@@ -2884,8 +3347,10 @@
       const textarea = document.getElementById('wedit-replacement');
       const reset = document.getElementById('wedit-reset');
 
-      if (textarea) textarea.value = item.originalText || '';
+      activeOriginalText = item.originalText || '';
+      if (textarea) textarea.value = activeOriginalText;
       if (reset) reset.disabled = true;
+      updateEditorPreview();
 
       const fileLabel = document.getElementById('wedit-file-name');
 
@@ -3064,6 +3529,7 @@
     activeKey = null;
     activeRoot = null;
     activeText = null;
+    activeOriginalText = '';
 
     saveEdits();
 
@@ -3079,6 +3545,7 @@
       textarea.value = '';
       textarea.disabled = true;
     }
+    updateEditorPreview();
 
     document.getElementById('wedit-apply').disabled = true;
     document.getElementById('wedit-reset').disabled = true;

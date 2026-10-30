@@ -23,9 +23,9 @@ Run `scripts/package-webstore.cmd` from the repo or double-click it. The output 
 
 ## Publish an announcement
 
-Choose **Post an announcement** in WEdit or open `announcements.json` on GitHub using an account with repository write access. Add a new object to the `announcements` array. Each item needs a short `title`, an ISO 8601 `publishedAt` value, and plain-text `body`; an optional `url` must use HTTPS. Commit the file to `main`. Installed clients check while their News tab is selected and visible, then again every 15 minutes. The feed is public and contains no authentication or private storage.
+Fill the title and message in **News**, then choose **Build announcement file** and **Copy feed file**. Open the GitHub editor, replace all text in `announcements.json`, and commit to `main` using an account with repository write access. The composer keeps the current posts and inserts the new one at the top. Installed clients check while their News tab is selected and visible, then again every 15 minutes. The feed is public and contains no authentication or private storage.
 
-Example feed:
+Example feed structure:
 
 ```json
 {

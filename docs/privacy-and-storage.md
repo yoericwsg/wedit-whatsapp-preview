@@ -6,7 +6,9 @@ WEdit has no AI features, user account, analytics, backend, or message transport
 
 - Preview originals and replacements plus chat labels are stored in the `wedit-local-preview-v1` localStorage key on the WhatsApp Web origin.
 - Theme settings are stored in the `wedit-theme-v1` localStorage key.
+- The sound toggle is stored in the `wedit-sounds-v1` localStorage key.
 - Uploaded media blobs are stored in the `wedit-local-preview-media` IndexedDB database.
+- Imported sticker images share that local IndexedDB database under WEdit sticker keys. They remain in that browser profile and are not included in message backups.
 - Exported JSON backups are files created on the device. A backup can contain message text and media.
 
 ## Network behavior

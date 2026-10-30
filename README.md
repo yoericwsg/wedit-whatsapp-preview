@@ -9,8 +9,10 @@ WEdit changes the visible page in your browser. It does not send messages, chang
 ## What it does
 
 - Select a loaded text message and create a local replacement preview.
+- See a live draft preview and character count; reset the draft to the original text with one click.
 - Keep a searchable list of saved previews; restore one message or all previews.
 - Attach a local image, GIF, sticker-style image, or video preview, or use a direct HTTP(S) media URL.
+- Import saved WhatsApp sticker images in bulk or from a folder, then reuse them from a personal sticker shelf.
 - Choose eight themes, adjust a custom palette, enable Liquid Glass, and import/export theme JSON.
 - Export or import a full JSON backup, including saved previews, the selected theme, and uploaded media.
 - Read the in-panel changelog and public announcements; optional interface sounds are controlled by a toggle.
@@ -81,7 +83,7 @@ See [Privacy and storage](docs/privacy-and-storage.md) for details.
 
 See [Installation](docs/installation.md), [Feature guide](docs/features.md), and [Advanced use](docs/advanced-use.md).
 
-The public [changelog](CHANGELOG.md) records releases. Announcement posts are stored in [`announcements.json`](announcements.json); use **Post an announcement** in WEdit's News tab to open the GitHub editor. Add the post and commit the file to `main` for clients to fetch it.
+The public [changelog](CHANGELOG.md) records releases. To publish an announcement, open **News**, fill in the post title and text, choose **Build announcement file**, then **Copy feed file**. Choose **Open GitHub editor**, replace the whole file contents with the copied text, and commit to `main`. The composer preserves existing posts. GitHub access with repository write permission is required.
 
 ## Project files
 
