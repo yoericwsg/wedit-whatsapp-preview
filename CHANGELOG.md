@@ -1,5 +1,11 @@
 # Changelog
 
+## 3.3.0 — 2026-10-30
+
+- Replaced the multi-step announcement file workflow with a one-step publisher.
+- Added server-side key checks; the publishing key and GitHub token are not stored in the extension.
+- Added a Netlify Function that validates posts and keeps the latest 30 announcements.
+
 ## 3.2.1 — 2026-10-30
 
 - Added a Tampermonkey page-load check that opens the update screen once per new version and leaves an update button in WEdit.

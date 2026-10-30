@@ -1,10 +1,10 @@
 # WEdit — WhatsApp Local Preview Editor
 
-> A no-AI, local-only preview studio for WhatsApp Web. Edit how messages look in your own browser, try media previews, customize the panel, and keep portable backups.
+> A no-AI preview studio for WhatsApp Web. Message previews, stickers, themes, and backups stay in your browser; announcements use a separate keyed publisher.
 
 ![WEdit editor screenshot running the real content script with fictional sample messages](docs/images/editor-demo.png)
 
-WEdit changes the visible page in your browser. It does not send messages, change WhatsApp's servers, or change what another person sees. There is no AI, account, analytics, WEdit server, or message-sync service. The News tab reads public announcement text from this repository.
+WEdit changes the visible page in your browser. It does not send messages, change WhatsApp's servers, or change what another person sees. There is no AI, account, analytics, or message-sync service. The News tab reads a public feed. Publishing sends only the announcement fields and the entered key to the configured WEdit publishing function; the function keeps its GitHub token server-side.
 
 ## What it does
 
@@ -83,13 +83,31 @@ See [Privacy and storage](docs/privacy-and-storage.md) for details.
 
 See [Installation](docs/installation.md), [Feature guide](docs/features.md), and [Advanced use](docs/advanced-use.md).
 
-The public [changelog](CHANGELOG.md) records releases. To publish an announcement, open **News**, fill in the post title and text, choose **Build announcement file**, then **Copy feed file**. Choose **Open GitHub editor**, replace the whole file contents with the copied text, and commit to `main`. The composer preserves existing posts. GitHub access with repository write permission is required.
+The public [changelog](CHANGELOG.md) records releases. To publish, open **News**, enter a title, message, optional HTTPS link, and the private publishing key, then choose **Publish announcement**. WEdit clears the key after a successful post. The server validates the post and updates the public feed while keeping its GitHub token out of the extension.
+
+### Set up the announcement publisher
+
+The publishing service must be deployed once before the **Publish announcement** button can post. Connect this repository to Netlify and choose a site name. Add its function URL to `ANNOUNCEMENT_PUBLISH_URL` in `content.js`, `background.js`, and `wedit.user.js`; add the matching Netlify host permission to `manifest.json` and `@connect` line in `wedit.user.js`. Reload the extension and Tampermonkey script, then redeploy the Netlify site. In Netlify, add these environment variables with **Functions** scope, then redeploy:
+
+- `ANNOUNCEMENT_KEY`: generate a new random key for yourself. Do not reuse the key posted in chat; treat that one as exposed.
+- `GITHUB_TOKEN`: a fine-grained GitHub token restricted to this repository, with **Contents: Read and write** permission. Store it only in Netlify's environment-variable settings.
+
+Generate a key in PowerShell with:
+
+```powershell
+$bytes = New-Object byte[] 32
+[Security.Cryptography.RandomNumberGenerator]::Fill($bytes)
+[Convert]::ToBase64String($bytes)
+```
+
+The key is a shared publisher credential: only give it to people allowed to post. Do not put either secret in GitHub files, extension code, or `netlify.toml`. WEdit ships with publishing disabled until you configure your own function URL, so the entered key is never sent to an unverified host.
 
 ## Project files
 
 - `manifest.json` — Manifest V3 metadata and WhatsApp Web match.
 - `content.js` — extension content script.
-- `background.js` — fetches the fixed public announcement feed for the extension.
+- `background.js` — fetches the public feed and sends keyed publish requests to the fixed publisher endpoint.
+- `netlify/functions/publish-announcement.mjs` — validates keyed announcement posts and commits them to the GitHub feed.
 - `wedit.user.js` — Tampermonkey-ready userscript.
 - `announcements.json` and `CHANGELOG.md` — public update notes and feed.
 - `install.cmd` — opens the browser extensions page and repository folder.

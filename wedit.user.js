@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         WEdit — WhatsApp Local Preview Editor
 // @namespace    local.wedit.preview
-// @version      3.2.1
+// @version      3.3.0
 // @description  Customizable local WhatsApp preview studio with themes and full backup/restore.
 // @match        https://web.whatsapp.com/*
 // @run-at       document-idle
@@ -28,12 +28,22 @@
   const ANNOUNCEMENTS_URL = 'https://raw.githubusercontent.com/yoericwsg/wedit-whatsapp-preview/main/announcements.json';
   const RELEASE_INFO_URL = 'https://raw.githubusercontent.com/yoericwsg/wedit-whatsapp-preview/main/version.json';
   const USERSCRIPT_URL = 'https://raw.githubusercontent.com/yoericwsg/wedit-whatsapp-preview/main/wedit.user.js';
+  const ANNOUNCEMENT_PUBLISH_URL = '';
   const PANEL_ID = 'wedit-panel';
   const LAUNCHER_ID = 'wedit-launcher';
   const SELECTOR_TEXT = '[data-testid="selectable-text"], .selectable-text';
   const SELECTOR_ROOT = '[data-testid="msg-container"], .message-in, .message-out';
   const QUOTED = '[data-testid="quoted-message"], .quoted-message, [data-testid="quoted-message-container"]';
   const CHANGELOG_ENTRIES = [
+    {
+      version: '3.3.0',
+      date: '2026-10-30',
+      title: 'One-step, key-protected announcements',
+      notes: [
+        'Publish announcements from News with one action and a private server-checked key.',
+        'The publisher keeps its GitHub token on the server and preserves the latest 30 posts.'
+      ]
+    },
     {
       version: '3.2.1',
       date: '2026-10-30',
@@ -622,8 +632,6 @@
       }
 
       #${PANEL_ID} .wedit-sound-row input {accent-color:var(--wedit-accent)}
-      #${PANEL_ID} #wedit-announcement-publish-actions[hidden],
-      #${PANEL_ID} #wedit-announcement-json[hidden] {display:none!important}
 
       #${PANEL_ID} .wedit-helper {
         margin-top:8px;color:var(--wedit-muted);font-size:10px;line-height:1.5
@@ -1417,7 +1425,7 @@
               <div class="wedit-label">Release notes</div>
               <div class="wedit-heading-title">Changelog</div>
             </div>
-            <span class="wedit-live-dot">3.2.1</span>
+            <span class="wedit-live-dot">3.3.0</span>
           </div>
           <div class="wedit-changelog-list" id="wedit-changelog-list"></div>
         </section>
@@ -1439,7 +1447,7 @@
             <div class="wedit-section-title">Create a post</div>
           </div>
           <div class="wedit-helper">
-            1. Fill in the fields. 2. Build the file and copy it. 3. Open GitHub, replace the file contents, and commit. Your post appears in News after refresh.
+            Write your post, enter the private publishing key, then select Publish. The key is checked by the WEdit publishing service and is never saved here.
           </div>
           <label class="wedit-label" for="wedit-announcement-title">Title</label>
           <input id="wedit-announcement-title" type="text" maxlength="140"
@@ -1450,21 +1458,15 @@
           <label class="wedit-label" for="wedit-announcement-url">Link (optional · HTTPS)</label>
           <input id="wedit-announcement-url" type="url"
             placeholder="https://your-site.example/post">
+          <label class="wedit-label" for="wedit-announcement-key">Publishing key</label>
+          <input id="wedit-announcement-key" type="password" autocomplete="off"
+            maxlength="256" placeholder="Enter the private publishing key">
           <button class="wedit-btn wedit-primary wedit-wide"
             id="wedit-build-announcement" type="button" disabled>
-            Build announcement file
+            Publish announcement
           </button>
           <div class="wedit-helper" id="wedit-announcement-draft-status">
             Open News to load the current feed before creating a post.
-          </div>
-          <textarea id="wedit-announcement-json" readonly hidden
-            aria-label="Ready-to-paste announcements JSON"></textarea>
-          <div class="wedit-actions" id="wedit-announcement-publish-actions" hidden>
-            <button class="wedit-btn wedit-secondary" id="wedit-copy-announcement"
-              type="button">Copy feed file</button>
-            <a class="wedit-btn wedit-primary" id="wedit-open-feed-editor"
-              href="https://github.com/yoericwsg/wedit-whatsapp-preview/edit/main/announcements.json"
-              target="_blank" rel="noopener noreferrer">Open GitHub editor</a>
           </div>
           <label class="wedit-sound-row">
             <input id="wedit-sound-toggle" type="checkbox">
@@ -1502,21 +1504,17 @@
     for (const id of [
       'wedit-announcement-title',
       'wedit-announcement-body',
-      'wedit-announcement-url'
+      'wedit-announcement-url',
+      'wedit-announcement-key'
     ]) {
       panel.querySelector(`#${id}`).addEventListener('input', () => {
-        panel.querySelector('#wedit-announcement-json').hidden = true;
-        panel.querySelector('#wedit-announcement-publish-actions').hidden = true;
         panel.querySelector('#wedit-announcement-draft-status').textContent =
-          'Your draft changed. Build the file again before copying it.';
+          'Ready when your title, message, and publishing key are filled in.';
       });
     }
 
     panel.querySelector('#wedit-build-announcement')
       .addEventListener('click', buildAnnouncementFile);
-
-    panel.querySelector('#wedit-copy-announcement')
-      .addEventListener('click', copyAnnouncementFile);
 
     panel.querySelector('#wedit-pick-stickers')
       .addEventListener('click', () =>
@@ -1723,23 +1721,20 @@
   async function buildAnnouncementFile() {
     const status = document.getElementById('wedit-announcement-draft-status');
     const buildButton = document.getElementById('wedit-build-announcement');
-    if (buildButton) buildButton.disabled = true;
-    status.textContent = 'Refreshing the current feed so existing posts are kept…';
-    await refreshAnnouncements(false);
-
     const title = document.getElementById('wedit-announcement-title').value.trim();
     const body = document.getElementById('wedit-announcement-body').value.trim();
     const rawURL = document.getElementById('wedit-announcement-url').value.trim();
-
-    if (!announcementFeedReady || !Array.isArray(announcementFeedItems)) {
-      status.textContent = 'Wait for the current feed to load, then try again.';
-      if (buildButton) buildButton.disabled = true;
+    const keyInput = document.getElementById('wedit-announcement-key');
+    const key = keyInput.value;
+    if (!title || !body) {
+      status.textContent = 'Add a title and message before publishing.';
+      showToast('A title and announcement message are required.');
       return;
     }
-    if (buildButton) buildButton.disabled = false;
-    if (!title || !body) {
-      status.textContent = 'Add a title and message before building the file.';
-      showToast('A title and announcement message are required.');
+    if (!key) {
+      status.textContent = 'Enter the private publishing key to publish.';
+      showToast('A publishing key is required.');
+      keyInput.focus();
       return;
     }
 
@@ -1758,51 +1753,65 @@
 
     const announcement = {
       title: title.slice(0, 140),
-      publishedAt: new Date().toISOString(),
       body: body.slice(0, 4000)
     };
     if (url) announcement.url = url;
-
-    const feed = {
-      schemaVersion: 1,
-      announcements: [announcement, ...announcementFeedItems]
-        .slice(0, 30)
-        .map(item => ({
-          title: item.title,
-          publishedAt: item.publishedAt,
-          body: item.body,
-          ...(item.link ? { url: item.link } : {})
-        }))
-    };
-
-    const output = document.getElementById('wedit-announcement-json');
-    output.value = JSON.stringify(feed, null, 2);
-    output.hidden = false;
-    document.getElementById('wedit-announcement-publish-actions').hidden = false;
-    status.textContent =
-      'Ready. Copy this full file, open GitHub, replace the file contents, and commit to main.';
-    playInterfaceSound('success');
+    if (buildButton) buildButton.disabled = true;
+    status.textContent = 'Checking the publishing key and posting…';
+    try {
+      const result = await publishAnnouncement({ announcement, key });
+      keyInput.value = '';
+      document.getElementById('wedit-announcement-title').value = '';
+      document.getElementById('wedit-announcement-body').value = '';
+      document.getElementById('wedit-announcement-url').value = '';
+      status.textContent = result.message || 'Announcement published. Refreshing News…';
+      await refreshAnnouncements(true);
+      playInterfaceSound('success');
+    } catch (error) {
+      status.textContent = error.message || 'Could not publish the announcement.';
+    } finally {
+      if (buildButton) buildButton.disabled = false;
+    }
   }
 
-  async function copyAnnouncementFile() {
-    const output = document.getElementById('wedit-announcement-json');
-    const status = document.getElementById('wedit-announcement-draft-status');
-    output.focus();
-    output.select();
-
-    try {
-      if (navigator.clipboard?.writeText) {
-        await navigator.clipboard.writeText(output.value);
-      } else if (!document.execCommand('copy')) {
-        throw new Error('Copy command unavailable');
-      }
-      status.textContent =
-        'Feed file copied. Open the GitHub editor, select all, paste, and commit the change.';
-      showToast('Announcement feed copied to clipboard.');
-    } catch (_) {
-      status.textContent =
-        'The file is selected. Press Ctrl+C, then open GitHub, select all, paste, and commit.';
+  function publishAnnouncement(payload) {
+    if (!ANNOUNCEMENT_PUBLISH_URL) {
+      return Promise.reject(new Error('Publisher is not connected yet. Set the Netlify endpoint and permissions first.'));
     }
+    if (typeof GM_xmlhttpRequest === 'function') {
+      return new Promise((resolve, reject) => {
+        GM_xmlhttpRequest({
+          method: 'POST',
+          url: ANNOUNCEMENT_PUBLISH_URL,
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${payload.key}` },
+          data: JSON.stringify({ announcement: payload.announcement }),
+          timeout: 15000,
+          onload: response => {
+            let result;
+            try { result = JSON.parse(response.responseText); } catch (_) { result = {}; }
+            if (response.status >= 200 && response.status < 300) resolve(result);
+            else reject(new Error(result.error || `Publish failed (HTTP ${response.status}).`));
+          },
+          onerror: () => reject(new Error('Could not reach the announcement publisher.')),
+          ontimeout: () => reject(new Error('The announcement publisher timed out.'))
+        });
+      });
+    }
+    if (typeof chrome !== 'undefined' && chrome.runtime?.id) {
+      return new Promise((resolve, reject) => {
+        chrome.runtime.sendMessage({
+          type: 'WEDIT_PUBLISH_ANNOUNCEMENT',
+          endpoint: ANNOUNCEMENT_PUBLISH_URL,
+          key: payload.key,
+          announcement: payload.announcement
+        }, response => {
+          if (chrome.runtime.lastError) reject(new Error('Could not reach the publisher.'));
+          else if (response?.ok) resolve(response);
+          else reject(new Error(response?.error || 'Could not publish the announcement.'));
+        });
+      });
+    }
+    return Promise.reject(new Error('Announcement publishing is available in the installed WEdit extension or Tampermonkey script.'));
   }
 
   function soundsEnabled() {
@@ -2018,8 +2027,8 @@
             : 'Feed is up to date. No announcements yet.';
         }
         const draftStatus = document.getElementById('wedit-announcement-draft-status');
-        if (draftStatus && !document.getElementById('wedit-announcement-json')?.value) {
-          draftStatus.textContent = 'Feed ready. Write a title and message, then build the file.';
+        if (draftStatus) {
+          draftStatus.textContent = 'Feed ready. Write a title and message, then publish.';
         }
         if (showFeedback) playInterfaceSound('success');
       } catch (error) {
