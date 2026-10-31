@@ -24,9 +24,9 @@ Animated WebP and GIF files animate in browsers that support them. WEdit imports
 
 WEdit opens on the Home dashboard. It includes quick links to the editor, sticker/media shelf, themes, backups, changelog, and announcements. The draggable launcher and your dashboard card settings are saved locally.
 
-The profile card can show your WhatsApp toolbar photo when the page exposes it. You can add a local display name, phone label, or card photo. Those fields change this WEdit card only; **Open profile** opens WhatsApp's own profile controls for account changes. WhatsApp does not expose every profile field in its page header, so a phone number may need to be entered on the local card.
+Select **Sync profile** to open WhatsApp's profile view and copy its currently visible name, About text, phone, and photo into the local Home card. Sync reads the page currently shown in your browser; it does not change WhatsApp account details. Local name, phone, and photo overrides are also available under **Personalize this card**.
 
-Choose one of fourteen presets, edit the custom color controls, or enable the Liquid Glass layer. Theme changes apply to the WEdit panel and are stored locally. Export/import theme JSON to reuse a palette.
+Choose one of fourteen presets, edit the colors, and enable Liquid Glass. The theme controls also include panel opening motion, a separate one-time update welcome card style, decorative flower/pumpkin/chain borders, and optional chain hover motion. Theme JSON includes these settings and can be imported or exported.
 
 ## Backup and restore
 
@@ -34,7 +34,9 @@ A full backup can include preview text, uploaded media, the current theme, and t
 
 ## Sound effects
 
-Open **News** and use **Play interface sound effects** to turn the small, locally generated sounds on or off. Sounds run only after a WEdit interaction and use the browser's Web Audio API; WEdit downloads no sound files.
+Open **News** and use **Play interface sound effects** to enable or mute UI sounds. In **Themes**, import a short audio file up to 3 MB and 15 seconds, preview it, or remove it. Imported sounds are stored in this browser's IndexedDB and play on WEdit interactions when the toggle is on.
+
+The animated update welcome card appears once when each new version opens. Its style is independent of the panel's open animation and can be changed in **Themes**.
 
 ## Quick hide
 

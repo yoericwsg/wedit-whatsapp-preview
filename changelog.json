@@ -2,6 +2,16 @@
   "schemaVersion": 1,
   "entries": [
     {
+      "version": "4.2.0",
+      "date": "2026-10-31",
+      "title": "Profile sync, animated themes, and custom sounds",
+      "notes": [
+        "Home can read your visible WhatsApp name, About text, phone, and profile photo.",
+        "Added custom interface sounds, opening animations, a separate update welcome, and decorative borders.",
+        "Theme JSON now includes animation, frame, and chain-motion settings."
+      ]
+    },
+    {
       "version": "4.1.0",
       "date": "2026-10-31",
       "title": "Home dashboard, profile shortcuts, and movable launcher",

@@ -10,7 +10,9 @@ When publishing a userscript code change, increase `@version` in `wedit.user.js`
 
 WEdit opens on **Home**. The shortcut tiles jump directly to each section. The floating launcher is moved by dragging its dotted grip; WEdit remembers its position on this device and places the panel beside it.
 
-The profile card can reuse the avatar visible in WhatsApp's toolbar. Name, phone label, and card photo edits are local WEdit display settings. **Open profile** opens WhatsApp's own profile menu. Some account details, including the phone number, are not exposed in the page header and must be entered manually if you want them on the local card.
+Select **Sync profile** to open WhatsApp's profile view. When the profile fields are visible, WEdit copies the current name, About text, phone, and avatar into its local card. If WhatsApp has not opened the profile view yet, select **Sync profile** again once it is visible. Local fields under **Personalize this card** override synced values.
+
+In **Themes**, panel motion, decorative frame, chain hover motion, and the separate update welcome-card style are saved with the palette and included in exported theme JSON. Import a short sound file there to replace the generated interface tone; the News sound toggle mutes both.
 
 ## Message discovery
 

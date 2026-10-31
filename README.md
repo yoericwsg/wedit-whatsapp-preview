@@ -15,11 +15,13 @@ WEdit changes the visible page in your browser. It does not send messages, chang
 - Import saved WhatsApp sticker images in bulk or from a folder, then reuse them from a personal sticker shelf.
 - Open to a dashboard with local profile shortcuts, saved-preview/theme/sticker stats, News and Changelog links.
 - Drag the WEdit launcher anywhere on screen; its position stays on this device and the panel follows it.
-- Choose fourteen themes, adjust a custom palette, enable Liquid Glass, and import/export theme JSON.
-- Personalize the local profile card with a name, number label, and photo; use **Open profile** for WhatsApp's own profile controls.
+- Choose fourteen themes, tune colors, add Liquid Glass, opening motion, flower/pumpkin/chain borders, and import/export the complete theme as JSON.
+- Use **Sync profile** to read the name, About, phone, and photo visible in WhatsApp's own profile panel; local card overrides remain available.
+- Import, preview, and remove a short custom interface sound. Sound files are stored only in this browser.
+- See a separate animated welcome card once when a new WEdit version first opens; choose its Liquid Glass or classic finish in Themes.
 - Export or import a full JSON backup, including saved previews, the selected theme, profile card, and uploaded media.
 - Use Quick hide to restore original message text and hide all WEdit controls instantly; toggle it with **Alt+Shift+H**.
-- Read the in-panel changelog and public announcements; optional interface sounds are controlled by a toggle.
+- Read the in-panel changelog and public announcements; the sound toggle controls both generated and imported UI sounds.
 - Toggle the panel with **Alt+Shift+E**. The editor also advertises **Ctrl/⌘+Enter** to apply the current edit.
 
 ![WEdit theme UI preview](docs/images/themes-preview.svg)

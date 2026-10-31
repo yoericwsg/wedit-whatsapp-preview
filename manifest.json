@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "WEdit — WhatsApp Local Preview Editor",
-  "version": "4.1.0",
-  "description": "Customizable local WhatsApp preview editor with themes and backup/restore.",
+  "version": "4.2.0",
+  "description": "Local WhatsApp preview studio with profile sync, custom sounds, animated themes, and backups.",
   "content_scripts": [
     {
       "matches": [

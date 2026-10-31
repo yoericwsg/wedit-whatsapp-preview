@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         WEdit — WhatsApp Local Preview Editor
 // @namespace    local.wedit.preview
-// @version      4.1.0
-// @description  Local WhatsApp preview studio with a customizable home dashboard, themes, and full backup/restore.
+// @version      4.2.0
+// @description  Local WhatsApp preview studio with profile sync, sound imports, animated themes, and backups.
 // @match        https://web.whatsapp.com/*
 // @run-at       document-idle
 // @grant        none
@@ -18,10 +18,13 @@
   const STYLE_ID = 'wedit-v3-styles';
   const THEME_STORE_KEY = 'wedit-theme-v1';
   const SOUND_STORE_KEY = 'wedit-sounds-v1';
+  const SOUND_MEDIA_KEY = 'wedit-custom-ui-sound';
+  const WELCOME_VERSION_KEY = 'wedit-welcome-version-v1';
   const PROFILE_STORE_KEY = 'wedit-profile-card-v1';
   const LAUNCHER_POSITION_KEY = 'wedit-launcher-position-v1';
   const ANNOUNCEMENTS_URL = 'https://raw.githubusercontent.com/yoericwsg/wedit-whatsapp-preview/main/announcements.json';
   const CHANGELOG_URL = 'https://raw.githubusercontent.com/yoericwsg/wedit-whatsapp-preview/main/changelog.json';
+  const APP_VERSION = '4.2.0';
   const RELEASE_INFO_URL = 'https://raw.githubusercontent.com/yoericwsg/wedit-whatsapp-preview/main/version.json';
   const USERSCRIPT_URL = 'https://raw.githubusercontent.com/yoericwsg/wedit-whatsapp-preview/main/wedit.user.js';
   const PANEL_ID = 'wedit-panel';
@@ -31,13 +34,23 @@
   const QUOTED = '[data-testid="quoted-message"], .quoted-message, [data-testid="quoted-message-container"]';
   const CHANGELOG_ENTRIES = [
     {
+      version: '4.2.0',
+      date: '2026-10-31',
+      title: 'Profile sync, animated themes, and custom sounds',
+      notes: [
+        'Home can read your visible WhatsApp name, About text, phone and profile photo.',
+        'Added custom interface sounds, opening animations, a separate update welcome, and decorative borders.',
+        'Theme JSON now carries animation, frame and chain-motion settings.'
+      ]
+    },
+    {
       version: '4.1.0',
       date: '2026-10-31',
       title: 'Home dashboard, profile shortcuts, and movable launcher',
       notes: [
-        'Added a home dashboard with local profile card, shortcuts, release notes, and announcements.',
-        'Added more built-in palettes and kept custom theme import/export.',
-        'Made the WEdit launcher draggable and remembered its position on this device.'
+        'Added a home dashboard with a local profile card and useful shortcuts.',
+        'Added more built-in palettes and custom theme import/export.',
+        'Made the WEdit launcher draggable and remembered its position.'
       ]
     },
     {
@@ -556,6 +569,35 @@
 
       #${PANEL_ID}.open {display:flex}
       #${PANEL_ID} * {box-sizing:border-box}
+      #${PANEL_ID}.wedit-animate-liquid.open {animation:wedit-panel-liquid .34s cubic-bezier(.2,.85,.25,1) both;transform-origin:bottom right}
+      #${PANEL_ID}.wedit-animate-ios.open {animation:wedit-panel-ios .62s cubic-bezier(.18,.9,.18,1) both;transform-origin:bottom right}
+      #${PANEL_ID}.wedit-animate-liquid.open .wedit-pane:not([hidden])>*{animation:wedit-content-in .28s cubic-bezier(.2,.8,.2,1) both}
+      #${PANEL_ID}.wedit-animate-liquid.open .wedit-pane:not([hidden])>*:nth-child(1){animation-delay:.04s}
+      #${PANEL_ID}.wedit-animate-liquid.open .wedit-pane:not([hidden])>*:nth-child(2){animation-delay:.08s}
+      #${PANEL_ID}.wedit-animate-liquid.open .wedit-pane:not([hidden])>*:nth-child(3){animation-delay:.12s}
+      #${PANEL_ID}.wedit-animate-liquid.open .wedit-pane:not([hidden])>*:nth-child(4){animation-delay:.16s}
+      @keyframes wedit-panel-liquid {from{opacity:0;transform:translateY(18px) scale(.94);filter:blur(8px)}to{opacity:1;transform:translateY(0) scale(1);filter:blur(0)}}
+      @keyframes wedit-panel-ios {0%{opacity:0;transform:translateY(28px) scale(.88);filter:blur(15px)}65%{opacity:1;transform:translateY(-3px) scale(1.01);filter:blur(0)}100%{transform:translateY(0) scale(1)}}
+      @keyframes wedit-content-in{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:translateY(0)}}
+      #${PANEL_ID}.wedit-frame-flowers::after,#${PANEL_ID}.wedit-frame-pumpkin::after,#${PANEL_ID}.wedit-frame-chain::after{content:var(--wedit-frame-content);position:absolute;z-index:4;inset:4px;display:flex;justify-content:space-around;align-items:flex-start;padding:2px 7px;border:1px solid color-mix(in srgb,var(--wedit-accent) 70%,transparent);border-radius:15px;color:var(--wedit-accent);font-size:13px;letter-spacing:5px;line-height:1;pointer-events:none;text-shadow:0 1px 7px var(--wedit-panel);transition:transform .28s ease,filter .28s ease}
+      #${PANEL_ID}.wedit-frame-flowers{--wedit-frame-content:'✿  ❀  ✿  ❀  ✿'}
+      #${PANEL_ID}.wedit-frame-pumpkin{--wedit-frame-content:'🎃  ✦  🎃  ✦  🎃'}
+      #${PANEL_ID}.wedit-frame-chain{--wedit-frame-content:'⛓  ⛓  ⛓  ⛓  ⛓'}
+      #${PANEL_ID}.wedit-frame-chain.wedit-chain-hover:hover::after{transform:translateY(-2px) rotate(-.5deg);filter:drop-shadow(0 0 8px var(--wedit-accent))}
+      #${PANEL_ID}.wedit-frame-chain.wedit-chain-hover .wedit-home-profile:hover{transform:translateY(-1px)}
+      #${PANEL_ID} .wedit-home-profile{transition:transform .2s ease,border-color .2s ease}
+      #${PANEL_ID}.wedit-no-motion.open{animation:none!important}
+      @media(prefers-reduced-motion:reduce){#${PANEL_ID}.open{animation:none!important}#${PANEL_ID} *,#${PANEL_ID} *::before,#${PANEL_ID} *::after{scroll-behavior:auto!important;transition-duration:.01ms!important}}
+      #wedit-welcome{position:fixed;z-index:1000002;inset:0;display:grid;place-items:center;padding:20px;background:#071018a8;backdrop-filter:blur(12px);animation:wedit-welcome-in .5s ease both}
+      #wedit-welcome[hidden]{display:none}
+      #wedit-welcome .wedit-welcome-card{width:min(440px,100%);padding:28px;border:1px solid color-mix(in srgb,var(--wedit-accent) 45%,var(--wedit-border));border-radius:26px;background:radial-gradient(ellipse at top right,color-mix(in srgb,var(--wedit-accent) 28%,transparent),transparent 65%),var(--wedit-panel);color:var(--wedit-text);box-shadow:0 30px 100px #0008;animation:wedit-welcome-card .7s cubic-bezier(.2,.9,.2,1) both}
+      #wedit-welcome.wedit-welcome-classic{backdrop-filter:none;background:#071018c9}
+      #wedit-welcome.wedit-welcome-classic .wedit-welcome-card{border-radius:16px;background:var(--wedit-panel)}
+      #wedit-welcome .wedit-label{color:var(--wedit-accent);font-size:10px;font-weight:900;letter-spacing:1.2px}
+      #wedit-welcome h2{margin:10px 0;color:var(--wedit-text);font-size:30px;letter-spacing:-1px}
+      #wedit-welcome p{color:var(--wedit-muted);font-size:13px;line-height:1.6}
+      @keyframes wedit-welcome-in{from{opacity:0}to{opacity:1}}
+      @keyframes wedit-welcome-card{from{opacity:0;transform:translateY(20px) scale(.94);filter:blur(10px)}to{opacity:1;transform:translateY(0) scale(1);filter:blur(0)}}
 
       #${PANEL_ID} .wedit-header {
         padding:16px 17px 12px;
@@ -686,6 +728,7 @@
       #${PANEL_ID} .wedit-profile-copy .wedit-label {margin:0;font-size:8px}
       #${PANEL_ID} .wedit-profile-copy strong {overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;color:var(--wedit-text)}
       #${PANEL_ID} .wedit-profile-copy>span:last-child {overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--wedit-muted);font-size:9px}
+      #${PANEL_ID} .wedit-profile-copy #wedit-profile-about{display:-webkit-box;white-space:normal;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;line-height:1.35}
       #${PANEL_ID} .wedit-profile-edit {margin-top:8px;border:1px solid var(--wedit-border);border-radius:12px;background:var(--wedit-surface);color:var(--wedit-text)}
       #${PANEL_ID} .wedit-profile-edit summary {padding:9px 11px;color:var(--wedit-accent);font-size:10px;font-weight:800;cursor:pointer}
       #${PANEL_ID} .wedit-profile-fields {display:grid;gap:8px;padding:0 11px 11px}
@@ -1404,10 +1447,10 @@
             <div class="wedit-profile-copy">
               <span class="wedit-label">YOUR WHATSAPP PROFILE</span>
               <strong id="wedit-profile-name">WhatsApp profile</strong>
+              <span id="wedit-profile-about">Open your profile to sync your About text</span>
               <span id="wedit-profile-phone">Phone number isn’t shown in this view</span>
             </div>
-            <button class="wedit-btn wedit-secondary" id="wedit-open-own-profile"
-              type="button">Open profile</button>
+            <button class="wedit-btn wedit-secondary" id="wedit-open-own-profile" type="button">Sync profile</button>
           </div>
 
           <details class="wedit-profile-edit">
@@ -1633,6 +1676,25 @@
           <div class="wedit-helper">
             Theme files are JSON, so you can keep and share your own palettes.
           </div>
+
+          <div class="wedit-section-row"><div class="wedit-section-title">Motion & frame</div></div>
+          <label class="wedit-label" for="wedit-motion-style">Panel opening animation</label>
+          <select id="wedit-motion-style"><option value="liquid">Liquid pop</option><option value="ios">iOS welcome glide</option><option value="none">No animation</option></select>
+          <label class="wedit-label" for="wedit-frame-style">Decorative border</label>
+          <select id="wedit-frame-style"><option value="none">No frame</option><option value="flowers">Flowers</option><option value="pumpkin">Pumpkins</option><option value="chain">Sleek chains</option></select>
+          <label class="wedit-glass-toggle"><input id="wedit-chain-hover" type="checkbox"><span><b>Move chains on hover</b><small>Subtle movement when the pointer reaches the panel.</small></span></label>
+          <label class="wedit-label" for="wedit-welcome-style">New-version welcome card</label>
+          <select id="wedit-welcome-style"><option value="glass">Liquid Glass</option><option value="classic">Classic</option></select>
+          <div class="wedit-helper">The welcome card appears once after an update. This choice is separate from the panel opening animation.</div>
+
+          <div class="wedit-section-row"><div class="wedit-section-title">Your interface sound</div></div>
+          <input id="wedit-sound-file" type="file" accept="audio/*,.mp3,.wav,.ogg,.m4a,.aac">
+          <div class="wedit-actions">
+            <button class="wedit-btn wedit-secondary" id="wedit-import-sound" type="button">Import sound</button>
+            <button class="wedit-btn wedit-secondary" id="wedit-preview-sound" type="button">Preview</button>
+            <button class="wedit-btn wedit-secondary" id="wedit-remove-sound" type="button">Remove</button>
+          </div>
+          <div class="wedit-helper" id="wedit-sound-status">Optional: MP3, WAV, OGG, or M4A up to 3 MB and 15 seconds. Stored on this device.</div>
         </section>
 
         <section id="wedit-pane-backup" class="wedit-pane" hidden>
@@ -1840,6 +1902,15 @@
         if (event.target.checked) playInterfaceSound('success');
       });
 
+    panel.querySelector('#wedit-import-sound').addEventListener('click', () => panel.querySelector('#wedit-sound-file').click());
+    panel.querySelector('#wedit-sound-file').addEventListener('change', importInterfaceSound);
+    panel.querySelector('#wedit-preview-sound').addEventListener('click', () => previewInterfaceSound());
+    panel.querySelector('#wedit-remove-sound').addEventListener('click', async () => {
+      await deleteMedia(SOUND_MEDIA_KEY);
+      renderSoundStatus();
+      showToast('Custom sound removed.');
+    });
+
     panel.querySelector('#wedit-apply')
       .addEventListener('click', applyActiveEdit);
 
@@ -1905,6 +1976,10 @@
 
     panel.querySelector('#wedit-glass-toggle')
       .addEventListener('change', updateCustomThemeFromControls);
+    for (const id of ['wedit-motion-style','wedit-frame-style','wedit-chain-hover']) {
+      panel.querySelector(`#${id}`).addEventListener('change', updateCustomThemeFromControls);
+    }
+    panel.querySelector('#wedit-welcome-style').addEventListener('change', updateCustomThemeFromControls);
 
     panel.querySelector('#wedit-reset-theme')
       .addEventListener('click', () => applyTheme(THEME_PRESETS[0]));
@@ -2022,8 +2097,72 @@
     }
   }
 
-  function playInterfaceSound(kind) {
+  async function importInterfaceSound(event) {
+    const input = event.currentTarget;
+    const file = input.files?.[0];
+    input.value = '';
+    if (!file) return;
+    if (!file.type.startsWith('audio/') || file.size > 3 * 1024 * 1024) {
+      showToast('Choose an audio file under 3 MB.');
+      return;
+    }
+    const url = URL.createObjectURL(file);
+    try {
+      const duration = await new Promise((resolve, reject) => {
+        const audio = new Audio();
+        audio.preload = 'metadata';
+        audio.onloadedmetadata = () => resolve(audio.duration);
+        audio.onerror = () => reject(new Error('Audio could not be read.'));
+        audio.src = url;
+      });
+      if (!Number.isFinite(duration) || duration > 15) throw new Error('Sound must be 15 seconds or shorter.');
+      await putMedia(SOUND_MEDIA_KEY, file);
+      renderSoundStatus();
+      showToast('Custom interface sound saved on this device.');
+      previewInterfaceSound();
+    } catch (error) {
+      showToast(error.message || 'Could not import that sound.');
+    } finally {
+      URL.revokeObjectURL(url);
+    }
+  }
+
+  async function renderSoundStatus() {
+    const status = document.getElementById('wedit-sound-status');
+    if (!status) return;
+    const record = await getMedia(SOUND_MEDIA_KEY);
+    status.textContent = record?.name
+      ? `Imported: ${record.name} · stored only in this browser.`
+      : 'Optional: MP3, WAV, OGG, or M4A up to 3 MB and 15 seconds. Stored on this device.';
+  }
+
+  async function previewInterfaceSound() {
+    const record = await getMedia(SOUND_MEDIA_KEY);
+    if (!record?.blob) {
+      showToast('Import a sound first.');
+      return;
+    }
+    const url = URL.createObjectURL(record.blob);
+    const audio = new Audio(url);
+    audio.volume = 0.75;
+    audio.onended = () => URL.revokeObjectURL(url);
+    audio.onerror = () => URL.revokeObjectURL(url);
+    try { await audio.play(); }
+    catch (_) { URL.revokeObjectURL(url); showToast('Press Preview again after interacting with the page.'); }
+  }
+
+  async function playInterfaceSound(kind) {
     if (!soundsEnabled()) return;
+    const customSound = await getMedia(SOUND_MEDIA_KEY);
+    if (customSound?.blob) {
+      const url = URL.createObjectURL(customSound.blob);
+      const audio = new Audio(url);
+      audio.volume = 0.42;
+      audio.onended = () => URL.revokeObjectURL(url);
+      audio.onerror = () => URL.revokeObjectURL(url);
+      audio.play().catch(() => URL.revokeObjectURL(url));
+      return;
+    }
 
     try {
       const AudioContextClass =
@@ -2089,14 +2228,20 @@
   function loadProfileCard() {
     try {
       const raw = JSON.parse(localStorage.getItem(PROFILE_STORE_KEY) || 'null');
-      if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return { name: '', phone: '', photo: '' };
+      if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return { name: '', phone: '', photo: '', synced: null };
       return {
         name: typeof raw.name === 'string' ? raw.name.slice(0, 60) : '',
         phone: typeof raw.phone === 'string' ? raw.phone.slice(0, 32) : '',
-        photo: typeof raw.photo === 'string' && /^data:image\/(png|jpeg|webp|gif);base64,/i.test(raw.photo) && raw.photo.length <= 1100000 ? raw.photo : ''
+        photo: typeof raw.photo === 'string' && /^data:image\/(png|jpeg|webp|gif);base64,/i.test(raw.photo) && raw.photo.length <= 1100000 ? raw.photo : '',
+        synced: raw.synced && typeof raw.synced === 'object' ? {
+          name: String(raw.synced.name || '').slice(0, 80),
+          about: String(raw.synced.about || '').slice(0, 140),
+          phone: String(raw.synced.phone || '').slice(0, 40),
+          photo: /^https:\/\//i.test(String(raw.synced.photo || '')) ? String(raw.synced.photo).slice(0, 2000) : ''
+        } : null
       };
     } catch (_) {
-      return { name: '', phone: '', photo: '' };
+      return { name: '', phone: '', photo: '', synced: null };
     }
   }
 
@@ -2109,6 +2254,7 @@
   function renderHomeProfile() {
     const nameNode = document.getElementById('wedit-profile-name');
     const phoneNode = document.getElementById('wedit-profile-phone');
+    const aboutNode = document.getElementById('wedit-profile-about');
     const avatar = document.getElementById('wedit-profile-avatar');
     if (!nameNode || !phoneNode || !avatar) return;
 
@@ -2116,13 +2262,15 @@
     const image = trigger?.querySelector('img');
     const accountName = image?.alt?.trim() || trigger?.getAttribute('aria-label')?.trim() || '';
     const accountNumber = (trigger?.getAttribute('aria-label') || '').match(/\+?[\d\s().-]{8,}/)?.[0]?.trim() || '';
-    const name = localProfileCard.name || accountName || 'Your WhatsApp profile';
-    const phone = localProfileCard.phone || accountNumber || 'Phone number isn’t shown in this view';
+    const synced = localProfileCard.synced || {};
+    const name = localProfileCard.name || synced.name || accountName || 'Your WhatsApp profile';
+    const phone = localProfileCard.phone || synced.phone || accountNumber || 'Phone number isn’t shown in this view';
     nameNode.textContent = name;
     phoneNode.textContent = phone;
+    if (aboutNode) aboutNode.textContent = synced.about || 'Open your profile to sync your About text';
     avatar.replaceChildren();
 
-    const photoSource = localProfileCard.photo || image?.currentSrc || image?.src || '';
+    const photoSource = localProfileCard.photo || synced.photo || image?.currentSrc || image?.src || '';
     if (photoSource && /^(https:\/\/|blob:|data:image\/)/i.test(photoSource)) {
       const photo = document.createElement('img');
       photo.src = photoSource;
@@ -2139,6 +2287,7 @@
     try { localStorage.setItem(PROFILE_STORE_KEY, JSON.stringify(localProfileCard)); }
     catch (_) { showToast('Could not save this profile card.'); }
     renderHomeProfile();
+    renderSoundStatus();
   }
 
   async function handleProfilePhoto(event) {
@@ -2161,13 +2310,66 @@
   }
 
   function openWhatsAppProfile() {
+    const alreadyOpen = scrapeWhatsAppProfile();
+    if (alreadyOpen) {
+      saveWhatsAppProfile(alreadyOpen);
+      showToast('WhatsApp profile synced to your WEdit card.');
+      return;
+    }
     const trigger = getWhatsAppProfileTrigger();
     if (!trigger) {
-      showToast('Open your WhatsApp profile from WhatsApp’s menu.');
+      const profile = scrapeWhatsAppProfile();
+      if (profile) saveWhatsAppProfile(profile);
+      else showToast('Open your WhatsApp profile from WhatsApp’s menu, then tap Sync profile.');
       return;
     }
     trigger.click();
-    showToast('WhatsApp profile opened. Edit account details there.');
+    showToast('Opening your WhatsApp profile…');
+    window.setTimeout(() => {
+      const profile = scrapeWhatsAppProfile();
+      if (profile) {
+        saveWhatsAppProfile(profile);
+        showToast('WhatsApp profile synced to your WEdit card.');
+      } else showToast('Profile opened. Tap Sync profile again when its details are visible.');
+    }, 650);
+  }
+
+  function scrapeWhatsAppProfile() {
+    const visible = element => !!element && element.getClientRects().length > 0 && getComputedStyle(element).visibility !== 'hidden';
+    const candidates = Array.from(document.querySelectorAll('[role="dialog"], [data-testid*="drawer"], [data-testid*="profile"], aside, section'))
+      .filter(visible)
+      .filter(node => /edit profile/i.test(node.innerText || ''))
+      .sort((a, b) => (a.innerText || '').length - (b.innerText || '').length);
+    const root = candidates[0];
+    if (!root) return null;
+    const controls = Array.from(root.querySelectorAll('input,textarea,[contenteditable="true"],[role="textbox"]'));
+    const valueFor = pattern => {
+      const control = controls.find(el => pattern.test(`${el.getAttribute('aria-label') || ''} ${el.getAttribute('placeholder') || ''} ${el.getAttribute('name') || ''} ${el.parentElement?.innerText || ''}`));
+      return String(control?.value || control?.textContent || '').trim();
+    };
+    const text = (root.innerText || '').replace(/\r/g, '');
+    const sectionValue = label => {
+      const lines = text.split('\n').map(line => line.trim()).filter(Boolean);
+      const index = lines.findIndex(line => new RegExp(`^${label}$`, 'i').test(line));
+      return index >= 0 ? (lines[index + 1] || '').slice(0, 140) : '';
+    };
+    const name = valueFor(/name/i) || sectionValue('Name');
+    const about = valueFor(/about|status/i) || sectionValue('About');
+    const phone = valueFor(/phone|number/i) || (text.match(/\+?[\d][\d\s().-]{7,}/)?.[0] || '').trim();
+    const photo = Array.from(root.querySelectorAll('img')).filter(img => img.naturalWidth > 48 && img.naturalHeight > 48)
+      .sort((a, b) => b.naturalWidth * b.naturalHeight - a.naturalWidth * a.naturalHeight)[0];
+    return { name, about, phone, photo: photo?.currentSrc || photo?.src || '' };
+  }
+
+  function saveWhatsAppProfile(profile) {
+    localProfileCard.synced = {
+      name: String(profile.name || '').slice(0, 80),
+      about: String(profile.about || '').slice(0, 140),
+      phone: String(profile.phone || '').slice(0, 40),
+      photo: /^https:\/\//i.test(profile.photo || '') ? profile.photo.slice(0, 2000) : ''
+    };
+    try { localStorage.setItem(PROFILE_STORE_KEY, JSON.stringify(localProfileCard)); } catch (_) {}
+    renderHomeProfile();
   }
 
   function renderHomeRelease() {
@@ -2386,6 +2588,10 @@
         ? raw.description.slice(0, 80)
         : 'My personal palette',
       glass: !!raw.glass,
+      motion: ['liquid', 'ios', 'none'].includes(raw.motion) ? raw.motion : 'liquid',
+      borderStyle: ['none', 'flowers', 'pumpkin', 'chain'].includes(raw.borderStyle) ? raw.borderStyle : 'none',
+      chainHover: !!raw.chainHover,
+      welcomeStyle: raw.welcomeStyle === 'classic' ? 'classic' : 'glass',
       colors: {}
     };
 
@@ -2527,6 +2733,21 @@
     [panel, launcher].filter(Boolean).forEach(el => {
       el.classList.toggle('wedit-glass', !!theme.glass);
     });
+    if (panel) {
+      panel.classList.remove('wedit-frame-flowers', 'wedit-frame-pumpkin', 'wedit-frame-chain', 'wedit-animate-liquid', 'wedit-animate-ios', 'wedit-no-motion', 'wedit-chain-hover');
+      if (theme.borderStyle !== 'none') panel.classList.add(`wedit-frame-${theme.borderStyle}`);
+      if (theme.chainHover && theme.borderStyle === 'chain') panel.classList.add('wedit-chain-hover');
+      if (theme.motion === 'none') panel.classList.add('wedit-no-motion');
+      else panel.classList.add(`wedit-animate-${theme.motion}`);
+    }
+    const motion = document.getElementById('wedit-motion-style');
+    const frame = document.getElementById('wedit-frame-style');
+    const chainHover = document.getElementById('wedit-chain-hover');
+    const welcome = document.getElementById('wedit-welcome-style');
+    if (motion) motion.value = theme.motion;
+    if (frame) frame.value = theme.borderStyle;
+    if (chainHover) chainHover.checked = theme.chainHover;
+    if (welcome) welcome.value = theme.welcomeStyle;
 
     if (persist) {
       try {
@@ -2561,6 +2782,14 @@
 
     const glass = document.getElementById('wedit-glass-toggle');
     if (glass) glass.checked = !!currentTheme.glass;
+    const motion = document.getElementById('wedit-motion-style');
+    const frame = document.getElementById('wedit-frame-style');
+    const chainHover = document.getElementById('wedit-chain-hover');
+    const welcome = document.getElementById('wedit-welcome-style');
+    if (motion) motion.value = currentTheme.motion;
+    if (frame) frame.value = currentTheme.borderStyle;
+    if (chainHover) chainHover.checked = currentTheme.chainHover;
+    if (welcome) welcome.value = currentTheme.welcomeStyle;
 
     updateThemeHeader();
   }
@@ -2584,6 +2813,10 @@
     }
 
     next.glass = !!document.getElementById('wedit-glass-toggle')?.checked;
+    next.motion = document.getElementById('wedit-motion-style')?.value || 'liquid';
+    next.borderStyle = document.getElementById('wedit-frame-style')?.value || 'none';
+    next.chainHover = !!document.getElementById('wedit-chain-hover')?.checked;
+    next.welcomeStyle = document.getElementById('wedit-welcome-style')?.value || 'glass';
     applyTheme(next);
   }
 
@@ -2983,7 +3216,13 @@
             /^data:image\/(png|jpeg|webp|gif);base64,/i.test(payload.profileCard.photo) &&
             payload.profileCard.photo.length <= 1100000
             ? payload.profileCard.photo
-            : ''
+            : '',
+          synced: payload.profileCard.synced && typeof payload.profileCard.synced === 'object' ? {
+            name: String(payload.profileCard.synced.name || '').slice(0, 80),
+            about: String(payload.profileCard.synced.about || '').slice(0, 140),
+            phone: String(payload.profileCard.synced.phone || '').slice(0, 40),
+            photo: /^https:\/\//i.test(String(payload.profileCard.synced.photo || '')) ? String(payload.profileCard.synced.photo).slice(0, 2000) : ''
+          } : null
         };
         try { localStorage.setItem(PROFILE_STORE_KEY, JSON.stringify(localProfileCard)); }
         catch (_) { showToast('Profile card could not fit in browser storage.'); }
@@ -3028,6 +3267,12 @@
     if (!panel) return;
 
     panelOpen = typeof force === 'boolean' ? force : !panelOpen;
+    if (panelOpen) {
+      panel.classList.remove('wedit-reopen');
+      void panel.offsetWidth;
+      panel.classList.add('wedit-reopen');
+      window.setTimeout(() => panel.classList.remove('wedit-reopen'), 700);
+    }
     panel.classList.toggle('open', panelOpen);
     if (panelOpen) positionPanelFromLauncher();
   }
@@ -3117,6 +3362,28 @@
 
     notice.append(message, update, close);
     document.body.appendChild(notice);
+  }
+
+  function showVersionWelcome() {
+    try {
+      if (localStorage.getItem(WELCOME_VERSION_KEY) === APP_VERSION) return;
+      localStorage.setItem(WELCOME_VERSION_KEY, APP_VERSION);
+    } catch (_) { return; }
+    const welcome = document.createElement('div');
+    welcome.id = 'wedit-welcome';
+    welcome.classList.toggle('wedit-welcome-classic', currentTheme?.welcomeStyle === 'classic');
+    welcome.setAttribute('role', 'dialog');
+    welcome.setAttribute('aria-modal', 'true');
+    welcome.setAttribute('aria-labelledby', 'wedit-welcome-title');
+    const card = document.createElement('section');
+    card.className = 'wedit-welcome-card';
+    card.innerHTML = `<div class="wedit-label">WEDIT UPDATE · ${APP_VERSION}</div><h2 id="wedit-welcome-title">A fresher space.</h2><p>Your profile card can sync the visible WhatsApp name, About, phone, and photo. Themes now have opening motion, decorative frames, and a separate update welcome style.</p><button class="wedit-btn wedit-primary" type="button">Take a look</button><button class="wedit-mini-link" type="button">Not now</button>`;
+    const close = () => welcome.remove();
+    card.querySelector('.wedit-btn').addEventListener('click', () => { close(); togglePanel(true); });
+    card.querySelector('.wedit-mini-link').addEventListener('click', close);
+    welcome.addEventListener('click', event => { if (event.target === welcome) close(); });
+    welcome.append(card);
+    document.body.append(welcome);
   }
 
   function checkForUserscriptUpdate(manualCheck = false) {
@@ -4165,6 +4432,7 @@
   function start() {
     addStyles();
     buildUI();
+    showVersionWelcome();
     refreshChangelog();
     checkForUserscriptUpdate();
     if (typeof GM_registerMenuCommand === 'function') {

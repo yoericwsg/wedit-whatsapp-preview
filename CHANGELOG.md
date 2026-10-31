@@ -1,5 +1,12 @@
 # Changelog
 
+## 4.2.0 — 2026-10-31
+
+- Added a profile sync button that reads the visible WhatsApp profile name, About text, phone, and photo into the Home card.
+- Added imported UI sounds (up to 3 MB and 15 seconds) with preview and remove controls; sound files stay in this browser's IndexedDB.
+- Added liquid/iOS-style panel opening motion, a separate one-time-per-version welcome card, flower/pumpkin/chain borders, and optional chain hover motion.
+- Included motion and frame choices in custom theme JSON imports and exports.
+
 ## 4.1.0 — 2026-10-31
 
 - Added a Home dashboard with profile shortcuts, saved-preview/theme/sticker stats, and one-tap links to each WEdit section.
