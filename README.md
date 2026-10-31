@@ -44,9 +44,9 @@ Enable **Developer mode** → **Load unpacked** → select this repository folde
 
 ## Install with Tampermonkey
 
-**New here? Start with the [step-by-step Tampermonkey installation guide](docs/installation.md).** It has direct Chrome, Edge, and Firefox install links, click-by-click steps, labeled illustrations, troubleshooting, and removal instructions.
+**New here? Start with the [step-by-step Tampermonkey installation guide](docs/installation.md).** It has direct browser-store links, plain click-by-click steps, advanced setup, troubleshooting, and removal instructions.
 
-Quick install: add Tampermonkey from your browser's official store, then open the [WEdit userscript](https://raw.githubusercontent.com/yoericwsg/wedit-whatsapp-preview/main/wedit.user.js) and click **Install** on the Tampermonkey page. Reload WhatsApp Web. The guide's screenshots are labeled illustrations; buttons may look slightly different across browsers.
+Quick install: add Tampermonkey from your browser's official store, then open the [WEdit userscript](https://raw.githubusercontent.com/yoericwsg/wedit-whatsapp-preview/main/wedit.user.js) and click **Install** on the Tampermonkey page. Reload WhatsApp Web.
 
 Tampermonkey checks for script updates on its configured schedule. When a newer version is available, WEdit can also show an in-page notice; click **Update in Tampermonkey**, then **Install**. Each code release must increase the userscript `@version` and `version.json` together.
 

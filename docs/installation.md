@@ -1,6 +1,6 @@
 # Install WEdit with Tampermonkey
 
-**This is the easiest way to use WEdit right now.** Install Tampermonkey once, then install WEdit with one click. The extension-store version is a separate option; this guide is for Tampermonkey.
+**This is the current recommended way to install WEdit.** Install Tampermonkey once, then install WEdit from its direct script link. This guide covers Tampermonkey; the Chrome/Edge extension has a separate install guide in the README.
 
 > WEdit creates previews only in your browser. It does not change WhatsApp messages on WhatsApp's servers or change what other people see.
 
@@ -10,8 +10,10 @@
 - Keep this page open so you can follow each step.
 - Install Tampermonkey from your browser's official store:
   - [Install Tampermonkey for Chrome](https://chromewebstore.google.com/detail/tampermonkey/dhdgffkkebhmkfjojejmpbldmpobfkfo)
-  - [Install Tampermonkey for Microsoft Edge](https://www.tampermonkey.net/index.php?browser=edge)
+  - [Install Tampermonkey for Microsoft Edge](https://microsoftedge.microsoft.com/addons/detail/tampermonkey/iikmkjmpaadaobahmlepeloendndfphd)
   - [Install Tampermonkey for Firefox](https://addons.mozilla.org/en-US/firefox/addon/tampermonkey/)
+  - [Install Tampermonkey for Opera](https://www.tampermonkey.net/index.php?browser=opera)
+  - [Tampermonkey for Safari and other supported browsers](https://www.tampermonkey.net/)
 
 ## Step 1 — Add Tampermonkey to your browser
 
@@ -19,8 +21,6 @@
 2. On the Tampermonkey store page, click **Add to Chrome** or **Get** / **Add to Firefox**.
 3. Confirm by clicking **Add extension** or **Add** in the small browser pop-up.
 4. Wait for the confirmation that Tampermonkey was added.
-
-![Illustrated store-page click map: choose Add to Chrome, then confirm Add extension](images/install-01-add-tampermonkey.svg)
 
 **Can’t see the Tampermonkey icon?** Click the puzzle-piece **Extensions** button near the address bar. You can pin Tampermonkey from that menu. Pinning is optional; it just makes the icon easier to find.
 
@@ -30,8 +30,6 @@
 2. Tampermonkey opens a page showing the WEdit script details.
 3. Click **Install** near the top of that page.
 4. Wait until the installation page closes or shows that WEdit is installed.
-
-![Illustrated install-page click map: review WEdit and click Install](images/install-02-install-wedit.svg)
 
 ### If you see code instead of an Install button
 
@@ -45,8 +43,6 @@
 2. If WhatsApp Web was already open, reload the tab with **Ctrl+R**.
 3. Open WEdit with **Alt+Shift+E**. On some keyboards, hold **Alt** and **Shift**, then tap **E**.
 4. To close the WEdit panel, press **Alt+Shift+E** again.
-
-![Illustrated WhatsApp Web click map: the WEdit panel and keyboard shortcut](images/install-03-open-wedit.svg)
 
 ## Updates
 
@@ -62,6 +58,41 @@ After the first install, Tampermonkey checks for WEdit script updates automatica
 | The Tampermonkey menu says WEdit is not running | Confirm the address is `web.whatsapp.com`, enable the WEdit script in the dashboard, and reload the page. |
 | Both the extension and userscript are installed | Turn one off in its browser settings; running both can create two panels. |
 
+## Advanced instructions
+
+### Install from the Tampermonkey dashboard
+
+Use this if clicking the direct script link does not open the install screen:
+
+1. Open the browser's **Extensions** menu and click **Tampermonkey**.
+2. Select **Dashboard**.
+3. Open **Utilities** and find **Import from URL**.
+4. Paste this exact URL:
+
+   `https://raw.githubusercontent.com/yoericwsg/wedit-whatsapp-preview/main/wedit.user.js`
+
+5. Click **Install** when Tampermonkey shows the WEdit script details.
+6. Reload WhatsApp Web.
+
+If **Import from URL** is missing, use **Create a new script**, replace all starter text with the contents of the linked `wedit.user.js`, and press **Ctrl+S**. A pasted copy might not have the update source set; install from the direct link later to enable normal update checks.
+
+### Check for updates manually
+
+1. Open Tampermonkey → **Dashboard**.
+2. Open the **Utilities** or **Installed userscripts** page, depending on your Tampermonkey version.
+3. Choose **Check for userscript updates**. If the WEdit menu command **Check for WEdit updates** is available in Tampermonkey's popup, that checks WEdit's published version notice as well.
+
+Tampermonkey's automatic update interval is controlled in Tampermonkey **Settings**. A new WEdit release is picked up according to that interval. The in-page WEdit notice is a second way to get to the Tampermonkey update screen; it does not install the update by itself.
+
+### Confirm that the script is enabled
+
+1. Open Tampermonkey → **Dashboard**.
+2. Find **WEdit — WhatsApp Local Preview Editor** in the list.
+3. Make sure its enable switch is on.
+4. Confirm the browser address begins with `https://web.whatsapp.com/`, then reload the tab.
+
+Do not run the userscript and unpacked extension at the same time. Both add their own WEdit panel.
+
 ## Remove WEdit
 
 1. Open Tampermonkey → **Dashboard**.
@@ -69,7 +100,3 @@ After the first install, Tampermonkey checks for WEdit script updates automatica
 3. Turn it off with its toggle, or open it and click the delete/trash control.
 
 To erase saved WEdit previews and media too, clear the browser's site data for `web.whatsapp.com`. This also clears other WhatsApp Web site data.
-
-## Visual guide note
-
-The images on this page are labeled illustrations of the buttons and locations. Store layouts can shift slightly between browser versions and languages; follow the bold button names if your screen looks a little different.
