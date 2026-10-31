@@ -44,12 +44,11 @@ Enable **Developer mode** → **Load unpacked** → select this repository folde
 
 ## Install with Tampermonkey
 
-1. Install Tampermonkey from the browser's official extension store.
-2. Open [`wedit.user.js`](wedit.user.js) in this repository.
-3. In GitHub, open the **Raw** view; Tampermonkey should offer to install the userscript. If it displays source text, copy it into Tampermonkey's **Create a new script** editor, replace the starter text, and save.
-4. Reload WhatsApp Web.
+**New here? Start with the [step-by-step Tampermonkey installation guide](docs/installation.md).** It has direct Chrome, Edge, and Firefox install links, click-by-click steps, labeled illustrations, troubleshooting, and removal instructions.
 
-The userscript checks this repository's published version when WhatsApp Web loads. When a newer version is available, WEdit shows an in-page notice. Choose **Update in Tampermonkey** to open the install/update screen; WEdit no longer opens tabs by itself. Tampermonkey also checks on its configured schedule. You can run **Check for WEdit updates** from the Tampermonkey menu. Each code release must increase the userscript `@version` and `version.json` together.
+Quick install: add Tampermonkey from your browser's official store, then open the [WEdit userscript](https://raw.githubusercontent.com/yoericwsg/wedit-whatsapp-preview/main/wedit.user.js) and click **Install** on the Tampermonkey page. Reload WhatsApp Web. The guide's screenshots are labeled illustrations; buttons may look slightly different across browsers.
+
+Tampermonkey checks for script updates on its configured schedule. When a newer version is available, WEdit can also show an in-page notice; click **Update in Tampermonkey**, then **Install**. Each code release must increase the userscript `@version` and `version.json` together.
 
 Tampermonkey asks for permission to contact `raw.githubusercontent.com` so the News tab can read the public announcement feed. No WhatsApp content or local previews are sent with that request.
 
