@@ -247,7 +247,8 @@
       finally { button.disabled = false; }
     });
 
-    if (location.hash === '#admin') setView('admin');
+    const initialView = location.hash === '#admin' ? 'admin' : location.hash === '#changelog' ? 'changelog' : 'news';
+    setView(initialView);
     $('#log-date').value = new Date().toISOString().slice(0, 10);
     refresh();
   </script>
