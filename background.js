@@ -2,12 +2,18 @@
 
 const ANNOUNCEMENTS_URL =
   'https://raw.githubusercontent.com/yoericwsg/wedit-whatsapp-preview/main/announcements.json';
+const CHANGELOG_URL =
+  'https://raw.githubusercontent.com/yoericwsg/wedit-whatsapp-preview/main/changelog.json';
 
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
-  if (message?.type !== 'WEDIT_FETCH_ANNOUNCEMENTS') return undefined;
+  const url = message?.type === 'WEDIT_FETCH_ANNOUNCEMENTS'
+    ? ANNOUNCEMENTS_URL
+    : message?.type === 'WEDIT_FETCH_CHANGELOG'
+      ? CHANGELOG_URL
+      : '';
+  if (!url) return undefined;
 
-  const url = `${ANNOUNCEMENTS_URL}?v=${Date.now()}`;
-  fetch(url, { cache: 'no-store', credentials: 'omit' })
+  fetch(`${url}?v=${Date.now()}`, { cache: 'no-store', credentials: 'omit' })
     .then(async response => {
       const body = await response.text();
       if (!response.ok) throw new Error(`Feed returned HTTP ${response.status}.`);

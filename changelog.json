@@ -1,0 +1,66 @@
+{
+  "schemaVersion": 1,
+  "entries": [
+    {
+      "version": "4.1.0",
+      "date": "2026-10-31",
+      "title": "Home dashboard, profile shortcuts, and movable launcher",
+      "notes": [
+        "Added a home dashboard with local profile card, shortcuts, release notes, and announcements.",
+        "Added more built-in palettes and kept custom theme import/export.",
+        "Made the WEdit launcher draggable and remembered its position on this device."
+      ]
+    },
+    {
+      "version": "4.0.0",
+      "date": "2026-10-30",
+      "title": "Quick hide, clean updates, announcements site",
+      "notes": [
+        "Added Quick hide (Alt+Shift+H) to restore original message text and hide WEdit controls.",
+        "Update checks show an in-page notice with an explicit Tampermonkey update action.",
+        "Added a Vercel announcements site with a server-side publisher."
+      ]
+    },
+    {
+      "version": "3.3.0",
+      "date": "2026-10-30",
+      "title": "Keyed announcement publishing",
+      "notes": [
+        "Added an initial announcement publishing scaffold; the deployed publishing site arrived in 4.0.0."
+      ]
+    },
+    {
+      "version": "3.2.1",
+      "date": "2026-10-30",
+      "title": "Faster Tampermonkey update notices",
+      "notes": [
+        "WEdit checks the published userscript version when WhatsApp Web loads and offers an update button."
+      ]
+    },
+    {
+      "version": "3.2.0",
+      "date": "2026-10-30",
+      "title": "Better editing, announcements, and stickers",
+      "notes": [
+        "Added a live text preview, character count, and reset-to-original draft control.",
+        "Added a guided announcement composer and reusable local sticker shelf."
+      ]
+    },
+    {
+      "version": "3.1.0",
+      "date": "2026-10-30",
+      "title": "Announcements and sound",
+      "notes": [
+        "Added public announcements, optional local interface sounds, and an in-panel changelog."
+      ]
+    },
+    {
+      "version": "3.0.1",
+      "date": "2026-10-30",
+      "title": "Tampermonkey updates",
+      "notes": [
+        "Added GitHub update metadata for the Tampermonkey userscript."
+      ]
+    }
+  ]
+}

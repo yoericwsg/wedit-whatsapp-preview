@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         WEdit — WhatsApp Local Preview Editor
 // @namespace    local.wedit.preview
-// @version      4.0.0
-// @description  Customizable local WhatsApp preview studio with themes and full backup/restore.
+// @version      4.1.0
+// @description  Local WhatsApp preview studio with a customizable home dashboard, themes, and full backup/restore.
 // @match        https://web.whatsapp.com/*
 // @run-at       document-idle
 // @grant        none
@@ -18,7 +18,10 @@
   const STYLE_ID = 'wedit-v3-styles';
   const THEME_STORE_KEY = 'wedit-theme-v1';
   const SOUND_STORE_KEY = 'wedit-sounds-v1';
+  const PROFILE_STORE_KEY = 'wedit-profile-card-v1';
+  const LAUNCHER_POSITION_KEY = 'wedit-launcher-position-v1';
   const ANNOUNCEMENTS_URL = 'https://raw.githubusercontent.com/yoericwsg/wedit-whatsapp-preview/main/announcements.json';
+  const CHANGELOG_URL = 'https://raw.githubusercontent.com/yoericwsg/wedit-whatsapp-preview/main/changelog.json';
   const RELEASE_INFO_URL = 'https://raw.githubusercontent.com/yoericwsg/wedit-whatsapp-preview/main/version.json';
   const USERSCRIPT_URL = 'https://raw.githubusercontent.com/yoericwsg/wedit-whatsapp-preview/main/wedit.user.js';
   const PANEL_ID = 'wedit-panel';
@@ -27,6 +30,16 @@
   const SELECTOR_ROOT = '[data-testid="msg-container"], .message-in, .message-out';
   const QUOTED = '[data-testid="quoted-message"], .quoted-message, [data-testid="quoted-message-container"]';
   const CHANGELOG_ENTRIES = [
+    {
+      version: '4.1.0',
+      date: '2026-10-31',
+      title: 'Home dashboard, profile shortcuts, and movable launcher',
+      notes: [
+        'Added a home dashboard with local profile card, shortcuts, release notes, and announcements.',
+        'Added more built-in palettes and kept custom theme import/export.',
+        'Made the WEdit launcher draggable and remembered its position on this device.'
+      ]
+    },
     {
       version: '4.0.0',
       date: '2026-10-30',
@@ -161,6 +174,66 @@
         muted: '#64748b', accent: '#087f5b',
         border: '#d3dce5', input: '#f5f7fa'
       }
+    },
+    {
+      id: 'sunset', name: 'Neon Sunset',
+      description: 'Warm coral with violet depth', glass: false,
+      colors: {
+        panel: '#241527', surface: '#301b2e',
+        surface2: '#3d2140', text: '#fff1f8',
+        muted: '#c5a7c6', accent: '#ff936f',
+        border: '#68405e', input: '#1a1020'
+      }
+    },
+    {
+      id: 'cyber', name: 'Cyber Lime',
+      description: 'Electric green on deep graphite', glass: false,
+      colors: {
+        panel: '#121817', surface: '#19211d',
+        surface2: '#222d26', text: '#f0fff3',
+        muted: '#a0b8a5', accent: '#c0ff5d',
+        border: '#405747', input: '#0b100d'
+      }
+    },
+    {
+      id: 'ember', name: 'Ember',
+      description: 'Copper light over charcoal', glass: false,
+      colors: {
+        panel: '#211812', surface: '#2c1f17',
+        surface2: '#3b291e', text: '#fff4e8',
+        muted: '#cbb6a0', accent: '#ffb35c',
+        border: '#60442e', input: '#17100c'
+      }
+    },
+    {
+      id: 'arctic', name: 'Arctic Blue',
+      description: 'Frosted blue with crisp contrast', glass: true,
+      colors: {
+        panel: '#10202b', surface: '#182c3b',
+        surface2: '#20394b', text: '#effaff',
+        muted: '#a7c2d0', accent: '#83e5ff',
+        border: '#416478', input: '#0a1720'
+      }
+    },
+    {
+      id: 'orchid', name: 'Orchid',
+      description: 'Soft magenta and midnight plum', glass: false,
+      colors: {
+        panel: '#1d1528', surface: '#271b35',
+        surface2: '#342447', text: '#fcf3ff',
+        muted: '#c2b0d1', accent: '#e2a3ff',
+        border: '#55406a', input: '#140e1d'
+      }
+    },
+    {
+      id: 'paper', name: 'Warm Paper',
+      description: 'Soft cream and ink', glass: false,
+      colors: {
+        panel: '#f5f0e7', surface: '#fffaf1',
+        surface2: '#eee5d7', text: '#28251f',
+        muted: '#70685a', accent: '#176b55',
+        border: '#d9cfbf', input: '#fffdf8'
+      }
     }
   ];
 
@@ -178,8 +251,10 @@
   let enhanceQueued = false;
   let pendingFile = null;
   let mediaDBPromise = null;
-  let activeTab = 'editor';
+  let activeTab = 'home';
   let announcementsRequest = null;
+  let changelogEntries = cloneObject(CHANGELOG_ENTRIES);
+  let localProfileCard = loadProfileCard();
   let announcementFeedItems = null;
   let announcementFeedReady = false;
   let audioContext = null;
@@ -463,6 +538,13 @@
         margin-left:4px;color:#a8f0d3;font-size:10px;font-weight:800
       }
 
+      #${LAUNCHER_ID} .wedit-drag-handle {
+        display:grid;place-items:center;width:18px;height:25px;
+        margin-left:-5px;color:#ffffff78;font-size:15px;line-height:1;
+        cursor:grab;touch-action:none;user-select:none
+      }
+      #${LAUNCHER_ID} .wedit-drag-handle:active {cursor:grabbing}
+
       #${PANEL_ID} {
         position:fixed;z-index:999998;right:22px;bottom:78px;
         width:min(410px,calc(100vw - 28px));
@@ -562,7 +644,7 @@
       }
 
       #${PANEL_ID} .wedit-nav {
-        display:grid;grid-template-columns:repeat(3,minmax(0,1fr));
+        display:grid;grid-template-columns:repeat(4,minmax(0,1fr));
         gap:4px;padding:5px;margin:10px 14px 0;
         border:1px solid var(--wedit-border);border-radius:13px;
         background:var(--wedit-input)
@@ -572,13 +654,57 @@
         display:flex;align-items:center;justify-content:center;gap:5px;
         padding:9px 3px;border:0;border-radius:9px;
         background:transparent;color:var(--wedit-muted);
-        font-size:11px;font-weight:800;cursor:pointer;
+        font-size:10px;font-weight:800;cursor:pointer;
         transition:background .16s ease,transform .16s ease
       }
 
       #${PANEL_ID} .wedit-nav-tab span {font-size:14px;opacity:.9}
       #${PANEL_ID} .wedit-nav-tab:hover {transform:translateY(-1px)}
       #${PANEL_ID} .wedit-pane[hidden] {display:none!important}
+
+      #${PANEL_ID} .wedit-home-banner {
+        padding:16px;border:1px solid var(--wedit-border);border-radius:16px;
+        background:radial-gradient(ellipse at top right,color-mix(in srgb,var(--wedit-accent) 18%,transparent),transparent 64%),var(--wedit-surface)
+      }
+      #${PANEL_ID} .wedit-home-banner h2 {
+        margin:5px 0 3px;color:var(--wedit-text);font-size:20px;
+        line-height:1.15;letter-spacing:-.6px
+      }
+      #${PANEL_ID} .wedit-home-banner p {margin:0;color:var(--wedit-muted);font-size:10px}
+      #${PANEL_ID} .wedit-home-profile {
+        display:flex;align-items:center;gap:10px;margin-top:10px;padding:12px;
+        border:1px solid var(--wedit-border);border-radius:15px;background:var(--wedit-surface)
+      }
+      #${PANEL_ID} .wedit-profile-avatar {
+        display:grid;place-items:center;flex:0 0 48px;width:48px;height:48px;
+        overflow:hidden;border:2px solid color-mix(in srgb,var(--wedit-accent) 50%,var(--wedit-border));
+        border-radius:50%;background:var(--wedit-surface2);color:var(--wedit-accent);
+        font-size:18px;font-weight:900
+      }
+      #${PANEL_ID} .wedit-profile-avatar img {width:100%;height:100%;object-fit:cover}
+      #${PANEL_ID} .wedit-profile-copy {display:flex;flex:1;min-width:0;flex-direction:column;gap:2px}
+      #${PANEL_ID} .wedit-profile-copy .wedit-label {margin:0;font-size:8px}
+      #${PANEL_ID} .wedit-profile-copy strong {overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;color:var(--wedit-text)}
+      #${PANEL_ID} .wedit-profile-copy>span:last-child {overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--wedit-muted);font-size:9px}
+      #${PANEL_ID} .wedit-profile-edit {margin-top:8px;border:1px solid var(--wedit-border);border-radius:12px;background:var(--wedit-surface);color:var(--wedit-text)}
+      #${PANEL_ID} .wedit-profile-edit summary {padding:9px 11px;color:var(--wedit-accent);font-size:10px;font-weight:800;cursor:pointer}
+      #${PANEL_ID} .wedit-profile-fields {display:grid;gap:8px;padding:0 11px 11px}
+      #${PANEL_ID} .wedit-profile-fields label {display:grid;gap:5px;color:var(--wedit-muted);font-size:9px;font-weight:750}
+      #${PANEL_ID} .wedit-profile-fields input[type=text],#${PANEL_ID} .wedit-profile-fields input[type=tel] {padding:8px;font-size:10px}
+      #${PANEL_ID} #wedit-local-profile-photo {max-width:100%;font-size:9px;color:var(--wedit-muted)}
+      #${PANEL_ID} .wedit-profile-photo {padding:8px;border:1px dashed var(--wedit-border);border-radius:9px;text-align:center;cursor:pointer}
+      #${PANEL_ID} .wedit-home-stats {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;margin-top:9px}
+      #${PANEL_ID} .wedit-home-stats>div {display:flex;min-width:0;flex-direction:column;gap:3px;padding:9px;border:1px solid var(--wedit-border);border-radius:11px;background:var(--wedit-surface)}
+      #${PANEL_ID} .wedit-home-stats span {overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--wedit-accent);font-size:13px;font-weight:900}
+      #${PANEL_ID} .wedit-home-stats small {color:var(--wedit-muted);font-size:8px}
+      #${PANEL_ID} .wedit-home-shortcuts {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+      #${PANEL_ID} .wedit-home-shortcuts button {display:grid;grid-template-columns:25px 1fr;gap:1px 7px;align-items:center;min-width:0;padding:9px;border:1px solid var(--wedit-border);border-radius:12px;background:var(--wedit-surface);color:var(--wedit-text);text-align:left;cursor:pointer;transition:transform .15s ease,border-color .15s ease}
+      #${PANEL_ID} .wedit-home-shortcuts button:hover {transform:translateY(-1px);border-color:var(--wedit-accent)}
+      #${PANEL_ID} .wedit-home-shortcuts button>span {grid-row:span 2;display:grid;place-items:center;width:25px;height:25px;border-radius:8px;background:var(--wedit-surface2);color:var(--wedit-accent);font-size:14px}
+      #${PANEL_ID} .wedit-home-shortcuts b {overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:9px}
+      #${PANEL_ID} .wedit-home-shortcuts small {color:var(--wedit-muted);font-size:8px;line-height:1.3}
+      #${PANEL_ID} .wedit-home-release {display:flex;align-items:center;gap:8px;margin-top:10px;padding:10px;border-top:1px solid var(--wedit-border);color:var(--wedit-text)}
+      #${PANEL_ID} .wedit-home-release strong {flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:10px}
 
       #${PANEL_ID} .wedit-pane-heading {
         display:flex;justify-content:space-between;align-items:center;
@@ -1110,6 +1236,96 @@
     installThemeStyles();
   }
 
+  function makeLauncherDraggable(launcher) {
+    const handle = launcher.querySelector('.wedit-drag-handle');
+    if (!handle) return;
+    let drag = null;
+    let suppressClickUntil = 0;
+
+    handle.addEventListener('pointerdown', event => {
+      if (event.button !== 0) return;
+      const rect = launcher.getBoundingClientRect();
+      drag = { id: event.pointerId, x: event.clientX, y: event.clientY, left: rect.left, top: rect.top, moved: false };
+      handle.setPointerCapture(event.pointerId);
+      event.preventDefault();
+    });
+
+    handle.addEventListener('pointermove', event => {
+      if (!drag || drag.id !== event.pointerId) return;
+      const dx = event.clientX - drag.x;
+      const dy = event.clientY - drag.y;
+      if (Math.abs(dx) + Math.abs(dy) > 3) drag.moved = true;
+      if (!drag.moved) return;
+      const maxLeft = Math.max(8, innerWidth - launcher.offsetWidth - 8);
+      const maxTop = Math.max(8, innerHeight - launcher.offsetHeight - 8);
+      const left = Math.min(maxLeft, Math.max(8, drag.left + dx));
+      const top = Math.min(maxTop, Math.max(8, drag.top + dy));
+      launcher.style.left = `${left}px`;
+      launcher.style.top = `${top}px`;
+      launcher.style.right = 'auto';
+      launcher.style.bottom = 'auto';
+      if (panelOpen) positionPanelFromLauncher();
+    });
+
+    const finishDrag = event => {
+      if (!drag || drag.id !== event.pointerId) return;
+      if (drag.moved) {
+        suppressClickUntil = Date.now() + 350;
+        try {
+          localStorage.setItem(LAUNCHER_POSITION_KEY, JSON.stringify({
+            left: parseFloat(launcher.style.left),
+            top: parseFloat(launcher.style.top)
+          }));
+        } catch (_) {}
+      }
+      drag = null;
+    };
+    handle.addEventListener('pointerup', finishDrag);
+    handle.addEventListener('pointercancel', finishDrag);
+    launcher.addEventListener('click', event => {
+      if (Date.now() < suppressClickUntil) {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+      }
+    }, true);
+    window.addEventListener('resize', () => {
+      restoreLauncherPosition(launcher);
+      if (panelOpen) positionPanelFromLauncher();
+    });
+  }
+
+  function restoreLauncherPosition(launcher) {
+    try {
+      const saved = JSON.parse(localStorage.getItem(LAUNCHER_POSITION_KEY) || 'null');
+      if (!Number.isFinite(saved?.left) || !Number.isFinite(saved?.top)) return;
+      const left = Math.min(Math.max(8, innerWidth - launcher.offsetWidth - 8), Math.max(8, saved.left));
+      const top = Math.min(Math.max(8, innerHeight - launcher.offsetHeight - 8), Math.max(8, saved.top));
+      launcher.style.left = `${left}px`;
+      launcher.style.top = `${top}px`;
+      launcher.style.right = 'auto';
+      launcher.style.bottom = 'auto';
+    } catch (_) {}
+  }
+
+  function positionPanelFromLauncher() {
+    const launcher = document.getElementById(LAUNCHER_ID);
+    const panel = document.getElementById(PANEL_ID);
+    if (!launcher || !panel || !panelOpen) return;
+    requestAnimationFrame(() => {
+      const button = launcher.getBoundingClientRect();
+      const box = panel.getBoundingClientRect();
+      const width = box.width || Math.min(410, innerWidth - 28);
+      const height = box.height || Math.min(innerHeight * 0.82, 820);
+      const left = Math.min(innerWidth - width - 8, Math.max(8, button.right - width));
+      let top = button.top - height - 10;
+      if (top < 8) top = Math.min(innerHeight - height - 8, button.bottom + 10);
+      panel.style.left = `${Math.max(8, left)}px`;
+      panel.style.top = `${Math.max(8, top)}px`;
+      panel.style.right = 'auto';
+      panel.style.bottom = 'auto';
+    });
+  }
+
   function buildUI() {
     if (document.getElementById(PANEL_ID)) return;
 
@@ -1117,12 +1333,18 @@
     launcher.id = LAUNCHER_ID;
     launcher.type = 'button';
     launcher.innerHTML =
+      '<span class="wedit-drag-handle" title="Drag to move WEdit">⠿</span>' +
       '<span class="wedit-mark">W</span>' +
       '<span>WEdit <span class="wedit-pill" id="wedit-launcher-state">' +
       'LOCAL STUDIO</span></span>';
 
-    launcher.addEventListener('click', () => togglePanel());
+    launcher.addEventListener('click', event => {
+      if (event.target.closest('.wedit-drag-handle')) return;
+      togglePanel();
+    });
+    makeLauncherDraggable(launcher);
     document.body.appendChild(launcher);
+    restoreLauncherPosition(launcher);
 
     const panel = document.createElement('aside');
     panel.id = PANEL_ID;
@@ -1134,7 +1356,7 @@
             <div class="wedit-kicker">WhatsApp Web utility</div>
             <div class="wedit-title">WEdit
               <span style="color:var(--wedit-accent);font-size:10px;letter-spacing:.6px">
-                STUDIO 4.0
+                STUDIO 4.1
               </span>
             </div>
           </div>
@@ -1154,6 +1376,8 @@
 
       <nav class="wedit-nav" aria-label="WEdit sections">
         <button type="button" class="wedit-nav-tab active"
+          data-tab="home"><span>⌂</span> Home</button>
+        <button type="button" class="wedit-nav-tab"
           data-tab="editor"><span>✎</span> Editor</button>
         <button type="button" class="wedit-nav-tab"
           data-tab="media"><span>▧</span> Media</button>
@@ -1168,6 +1392,61 @@
       </nav>
 
       <div class="wedit-body">
+        <section id="wedit-pane-home" class="wedit-pane">
+          <div class="wedit-home-banner">
+            <div class="wedit-label">YOUR WEDIT SPACE</div>
+            <h2>Everything, one tap away.</h2>
+            <p>Personal shortcuts and your local preview setup.</p>
+          </div>
+
+          <div class="wedit-home-profile">
+            <div class="wedit-profile-avatar" id="wedit-profile-avatar">W</div>
+            <div class="wedit-profile-copy">
+              <span class="wedit-label">YOUR WHATSAPP PROFILE</span>
+              <strong id="wedit-profile-name">WhatsApp profile</strong>
+              <span id="wedit-profile-phone">Phone number isn’t shown in this view</span>
+            </div>
+            <button class="wedit-btn wedit-secondary" id="wedit-open-own-profile"
+              type="button">Open profile</button>
+          </div>
+
+          <details class="wedit-profile-edit">
+            <summary>Personalize this card on this device</summary>
+            <div class="wedit-profile-fields">
+              <label>Name shown on this card<input id="wedit-local-profile-name"
+                type="text" maxlength="60" placeholder="Your name"></label>
+              <label>Phone label (optional)<input id="wedit-local-profile-phone"
+                type="tel" maxlength="32" placeholder="Add a number for your own reference"></label>
+              <label class="wedit-profile-photo" for="wedit-local-profile-photo">Choose a card photo</label>
+              <input id="wedit-local-profile-photo" type="file" accept="image/png,image/jpeg,image/webp,image/gif">
+              <button class="wedit-btn wedit-secondary" id="wedit-clear-profile-photo" type="button">Use WhatsApp photo</button>
+              <div class="wedit-helper">These details only customize this WEdit card. Use <b>Open profile</b> to change the real WhatsApp account profile.</div>
+            </div>
+          </details>
+
+          <div class="wedit-home-stats">
+            <div><span id="wedit-home-preview-count">0</span><small>saved previews</small></div>
+            <div><span id="wedit-home-theme">Midnight</span><small>active theme</small></div>
+            <div><span id="wedit-home-sticker-count">0</span><small>your stickers</small></div>
+          </div>
+
+          <div class="wedit-section-row"><div class="wedit-section-title">Quick shortcuts</div></div>
+          <div class="wedit-home-shortcuts">
+            <button type="button" data-home-tab="editor"><span>✎</span><b>Message editor</b><small>Open your local previews</small></button>
+            <button type="button" data-home-tab="media"><span>▧</span><b>Stickers & media</b><small>Import your sticker files</small></button>
+            <button type="button" data-home-tab="themes"><span>◐</span><b>Themes</b><small>Pick or import a palette</small></button>
+            <button type="button" data-home-tab="backup"><span>↻</span><b>Backups</b><small>Save or restore your data</small></button>
+            <button type="button" data-home-tab="changelog"><span>≡</span><b>Changelog</b><small>See what changed</small></button>
+            <button type="button" data-home-tab="announcements"><span>◉</span><b>Announcements</b><small>Read WEdit news</small></button>
+          </div>
+
+          <div class="wedit-home-release">
+            <span class="wedit-live-dot" id="wedit-home-release-version">LATEST RELEASE</span>
+            <strong id="wedit-home-release-title">WEdit 4.1.0</strong>
+            <button class="wedit-mini-link" type="button" data-home-tab="changelog">Read release notes →</button>
+          </div>
+        </section>
+
         <section id="wedit-pane-editor" class="wedit-pane">
           <div class="wedit-pane-heading">
             <div>
@@ -1438,7 +1717,7 @@
               <div class="wedit-label">Release notes</div>
               <div class="wedit-heading-title">Changelog</div>
             </div>
-            <span class="wedit-live-dot">4.0.0</span>
+            <span class="wedit-live-dot">4.1.0</span>
           </div>
           <div class="wedit-changelog-list" id="wedit-changelog-list"></div>
         </section>
@@ -1457,7 +1736,7 @@
           </div>
           <div class="wedit-announcement-list" id="wedit-announcement-list"></div>
           <div class="wedit-helper">
-            Posts are published on the WEdit announcements website. The key is entered there and checked server-side; it is never stored in this extension.
+            Posts are published on the WEdit newsroom. <a href="https://wedit-whatsapp-preview.vercel.app/" target="_blank" rel="noopener noreferrer">Open the newsroom →</a>
           </div>
           <label class="wedit-sound-row">
             <input id="wedit-sound-toggle" type="checkbox">
@@ -1488,6 +1767,37 @@
         setTab(btn.dataset.tab);
       })
     );
+
+    panel.querySelectorAll('[data-home-tab]').forEach(btn =>
+      btn.addEventListener('click', () => {
+        playInterfaceSound('tap');
+        setTab(btn.dataset.homeTab);
+      })
+    );
+
+    panel.querySelector('#wedit-open-own-profile')
+      .addEventListener('click', openWhatsAppProfile);
+
+    panel.querySelector('#wedit-local-profile-name')
+      .value = localProfileCard.name || '';
+    panel.querySelector('#wedit-local-profile-phone')
+      .value = localProfileCard.phone || '';
+    panel.querySelector('#wedit-local-profile-name')
+      .addEventListener('input', saveProfileCardFields);
+    panel.querySelector('#wedit-local-profile-phone')
+      .addEventListener('input', saveProfileCardFields);
+    panel.querySelector('#wedit-local-profile-photo')
+      .addEventListener('change', handleProfilePhoto);
+    panel.querySelector('#wedit-clear-profile-photo')
+      .addEventListener('click', () => {
+        localProfileCard.photo = '';
+        try { localStorage.setItem(PROFILE_STORE_KEY, JSON.stringify(localProfileCard)); }
+        catch (_) {}
+        renderHomeProfile();
+        showToast('Using the WhatsApp toolbar photo when available.');
+      });
+    renderHomeProfile();
+    renderHomeRelease();
 
     panel.querySelector('#wedit-refresh-announcements')
       .addEventListener('click', () => {
@@ -1650,6 +1960,7 @@
 
     renderThemePresets();
     renderChangelog();
+    setTab('home');
     updateThemeFields();
     applyTheme(currentTheme, false);
     updateStats();
@@ -1661,10 +1972,10 @@
     if (!panel) return;
 
     const allowed = [
-      'editor', 'media', 'themes', 'backup', 'changelog', 'announcements'
+      'home', 'editor', 'media', 'themes', 'backup', 'changelog', 'announcements'
     ];
 
-    if (!allowed.includes(tab)) tab = 'editor';
+    if (!allowed.includes(tab)) tab = 'home';
     activeTab = tab;
 
     panel.querySelectorAll('.wedit-nav-tab').forEach(btn =>
@@ -1680,6 +1991,12 @@
       panel.querySelector('#wedit-apply-media').disabled = !activeKey;
     }
 
+    if (tab === 'home') {
+      renderHomeProfile();
+      updateStats();
+    }
+
+    if (tab === 'changelog') refreshChangelog();
     if (tab === 'announcements') refreshAnnouncements(false);
   }
 
@@ -1749,7 +2066,7 @@
     if (!list) return;
 
     list.replaceChildren();
-    CHANGELOG_ENTRIES.forEach(entry => {
+    changelogEntries.forEach(entry => {
       const card = document.createElement('article');
       card.className = 'wedit-changelog-card';
       const heading = document.createElement('h3');
@@ -1769,8 +2086,125 @@
     });
   }
 
-  function requestAnnouncementText() {
-    const feedURL = `${ANNOUNCEMENTS_URL}?v=${Date.now()}`;
+  function loadProfileCard() {
+    try {
+      const raw = JSON.parse(localStorage.getItem(PROFILE_STORE_KEY) || 'null');
+      if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return { name: '', phone: '', photo: '' };
+      return {
+        name: typeof raw.name === 'string' ? raw.name.slice(0, 60) : '',
+        phone: typeof raw.phone === 'string' ? raw.phone.slice(0, 32) : '',
+        photo: typeof raw.photo === 'string' && /^data:image\/(png|jpeg|webp|gif);base64,/i.test(raw.photo) && raw.photo.length <= 1100000 ? raw.photo : ''
+      };
+    } catch (_) {
+      return { name: '', phone: '', photo: '' };
+    }
+  }
+
+  function getWhatsAppProfileTrigger() {
+    return document.querySelector(
+      '[data-testid="menu-bar-profile"], [data-testid="menu-bar-profile-photo"], button[aria-label="Profile"], [role="button"][aria-label*="profile" i]'
+    );
+  }
+
+  function renderHomeProfile() {
+    const nameNode = document.getElementById('wedit-profile-name');
+    const phoneNode = document.getElementById('wedit-profile-phone');
+    const avatar = document.getElementById('wedit-profile-avatar');
+    if (!nameNode || !phoneNode || !avatar) return;
+
+    const trigger = getWhatsAppProfileTrigger();
+    const image = trigger?.querySelector('img');
+    const accountName = image?.alt?.trim() || trigger?.getAttribute('aria-label')?.trim() || '';
+    const accountNumber = (trigger?.getAttribute('aria-label') || '').match(/\+?[\d\s().-]{8,}/)?.[0]?.trim() || '';
+    const name = localProfileCard.name || accountName || 'Your WhatsApp profile';
+    const phone = localProfileCard.phone || accountNumber || 'Phone number isn’t shown in this view';
+    nameNode.textContent = name;
+    phoneNode.textContent = phone;
+    avatar.replaceChildren();
+
+    const photoSource = localProfileCard.photo || image?.currentSrc || image?.src || '';
+    if (photoSource && /^(https:\/\/|blob:|data:image\/)/i.test(photoSource)) {
+      const photo = document.createElement('img');
+      photo.src = photoSource;
+      photo.alt = '';
+      avatar.append(photo);
+    } else {
+      avatar.textContent = Array.from(name.trim())[0]?.toUpperCase() || 'W';
+    }
+  }
+
+  function saveProfileCardFields() {
+    localProfileCard.name = document.getElementById('wedit-local-profile-name')?.value.trim().slice(0, 60) || '';
+    localProfileCard.phone = document.getElementById('wedit-local-profile-phone')?.value.trim().slice(0, 32) || '';
+    try { localStorage.setItem(PROFILE_STORE_KEY, JSON.stringify(localProfileCard)); }
+    catch (_) { showToast('Could not save this profile card.'); }
+    renderHomeProfile();
+  }
+
+  async function handleProfilePhoto(event) {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+    if (!file) return;
+    if (!/^image\/(png|jpeg|webp|gif)$/.test(file.type) || file.size > 750 * 1024) {
+      showToast('Choose a PNG, JPG, WebP, or GIF under 750 KB.');
+      return;
+    }
+    try {
+      const photo = await blobToDataURL(file);
+      localProfileCard.photo = typeof photo === 'string' ? photo : '';
+      localStorage.setItem(PROFILE_STORE_KEY, JSON.stringify(localProfileCard));
+      renderHomeProfile();
+      showToast('Local profile card photo saved.');
+    } catch (_) {
+      showToast('Could not save that profile photo.');
+    }
+  }
+
+  function openWhatsAppProfile() {
+    const trigger = getWhatsAppProfileTrigger();
+    if (!trigger) {
+      showToast('Open your WhatsApp profile from WhatsApp’s menu.');
+      return;
+    }
+    trigger.click();
+    showToast('WhatsApp profile opened. Edit account details there.');
+  }
+
+  function renderHomeRelease() {
+    const entry = changelogEntries[0];
+    const title = document.getElementById('wedit-home-release-title');
+    const version = document.getElementById('wedit-home-release-version');
+    if (title) title.textContent = entry ? `${entry.version} · ${entry.title}` : 'No release notes yet';
+    if (version) version.textContent = entry ? `LATEST · ${entry.version}` : 'LATEST RELEASE';
+  }
+
+  function cleanChangelogFeed(rawText) {
+    if (typeof rawText !== 'string' || rawText.length > 200000) throw new Error('Changelog file is too large.');
+    const raw = JSON.parse(rawText);
+    if (raw?.schemaVersion !== 1 || !Array.isArray(raw.entries)) throw new Error('Changelog format is invalid.');
+    return raw.entries.slice(0, 100).flatMap(entry => {
+      if (!entry || typeof entry !== 'object' || !/^\d+\.\d+\.\d+$/.test(entry.version || '') ||
+          typeof entry.title !== 'string' || typeof entry.date !== 'string' || !Array.isArray(entry.notes)) return [];
+      const notes = entry.notes.filter(note => typeof note === 'string').map(note => note.trim().slice(0, 300)).filter(Boolean).slice(0, 20);
+      return notes.length ? [{ version: entry.version.slice(0, 24), date: entry.date.slice(0, 10), title: entry.title.trim().slice(0, 140), notes }] : [];
+    });
+  }
+
+  async function refreshChangelog() {
+    try {
+      const body = await requestAnnouncementText(CHANGELOG_URL, 'changelog');
+      changelogEntries = cleanChangelogFeed(body);
+      renderChangelog();
+      renderHomeRelease();
+    } catch (error) {
+      console.warn('[WEdit] Changelog feed unavailable:', error);
+      renderChangelog();
+      renderHomeRelease();
+    }
+  }
+
+  function requestAnnouncementText(url = ANNOUNCEMENTS_URL, kind = 'announcements') {
+    const feedURL = `${url}?v=${Date.now()}`;
 
     if (typeof GM_xmlhttpRequest === 'function') {
       return new Promise((resolve, reject) => {
@@ -1795,7 +2229,7 @@
     if (typeof chrome !== 'undefined' && chrome.runtime?.id) {
       return new Promise((resolve, reject) => {
         chrome.runtime.sendMessage(
-          { type: 'WEDIT_FETCH_ANNOUNCEMENTS', feedURL },
+          { type: kind === 'changelog' ? 'WEDIT_FETCH_CHANGELOG' : 'WEDIT_FETCH_ANNOUNCEMENTS' },
           response => {
             if (chrome.runtime.lastError) {
               reject(new Error('Could not reach the WEdit update service.'));
@@ -1992,8 +2426,8 @@
 
     style.textContent = `
       #${PANEL_ID}{background:var(--wedit-panel)!important;color:var(--wedit-text)!important;border-color:var(--wedit-border)!important;}
-      #${PANEL_ID} .wedit-nav{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px;padding:5px;margin:10px 14px 0;border:1px solid var(--wedit-border);border-radius:13px;background:var(--wedit-input);}
-      #${PANEL_ID} .wedit-nav-tab{display:flex;align-items:center;justify-content:center;gap:5px;padding:9px 3px;border:0;border-radius:9px;background:transparent;color:var(--wedit-muted);font-size:11px;font-weight:800;cursor:pointer;transition:background .16s ease,transform .16s ease;}
+      #${PANEL_ID} .wedit-nav{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:3px;padding:5px;margin:10px 14px 0;border:1px solid var(--wedit-border);border-radius:13px;background:var(--wedit-input);}
+      #${PANEL_ID} .wedit-nav-tab{display:flex;align-items:center;justify-content:center;gap:4px;padding:8px 2px;border:0;border-radius:9px;background:transparent;color:var(--wedit-muted);font-size:10px;font-weight:800;cursor:pointer;transition:background .16s ease,transform .16s ease;}
       #${PANEL_ID} .wedit-nav-tab span{font-size:14px;opacity:.9;}
       #${PANEL_ID} .wedit-nav-tab:hover{transform:translateY(-1px);}
       #${PANEL_ID} .wedit-pane[hidden]{display:none!important;}
@@ -2383,6 +2817,7 @@
           version: 3,
           exportedAt: new Date().toISOString(),
           theme: currentTheme,
+          profileCard: localProfileCard,
           edits: outputEdits,
           mediaAssets
         }
@@ -2478,8 +2913,8 @@
         imported[key] = item;
       }
 
-      if (!Object.keys(imported).length && !payload.theme) {
-        throw new Error('No saved previews or theme were found in this backup.');
+      if (!Object.keys(imported).length && !payload.theme && !payload.profileCard) {
+        throw new Error('No saved previews, theme, or profile card were found in this backup.');
       }
 
       const mode = document.getElementById('wedit-import-mode').value;
@@ -2540,6 +2975,23 @@
         if (theme) applyTheme(theme);
       }
 
+      if (payload.profileCard && typeof payload.profileCard === 'object') {
+        localProfileCard = {
+          name: typeof payload.profileCard.name === 'string' ? payload.profileCard.name.slice(0, 60) : '',
+          phone: typeof payload.profileCard.phone === 'string' ? payload.profileCard.phone.slice(0, 32) : '',
+          photo: typeof payload.profileCard.photo === 'string' &&
+            /^data:image\/(png|jpeg|webp|gif);base64,/i.test(payload.profileCard.photo) &&
+            payload.profileCard.photo.length <= 1100000
+            ? payload.profileCard.photo
+            : ''
+        };
+        try { localStorage.setItem(PROFILE_STORE_KEY, JSON.stringify(localProfileCard)); }
+        catch (_) { showToast('Profile card could not fit in browser storage.'); }
+        document.getElementById('wedit-local-profile-name').value = localProfileCard.name;
+        document.getElementById('wedit-local-profile-phone').value = localProfileCard.phone;
+        renderHomeProfile();
+      }
+
       saveEdits();
       queueEnhance();
 
@@ -2577,6 +3029,7 @@
 
     panelOpen = typeof force === 'boolean' ? force : !panelOpen;
     panel.classList.toggle('open', panelOpen);
+    if (panelOpen) positionPanelFromLauncher();
   }
 
   function restoreRootForQuickHide(root) {
@@ -3535,10 +3988,15 @@
 
   function updateStats() {
     const count = document.getElementById('wedit-count');
+    const homeCount = document.getElementById('wedit-home-preview-count');
+    const homeTheme = document.getElementById('wedit-home-theme');
+    const homeStickers = document.getElementById('wedit-home-sticker-count');
 
-    if (count) {
-      count.textContent = String(Object.keys(edits).length);
-    }
+    const previewCount = Object.keys(edits).length;
+    if (count) count.textContent = String(previewCount);
+    if (homeCount) homeCount.textContent = String(previewCount);
+    if (homeTheme) homeTheme.textContent = currentTheme?.name || 'Midnight';
+    if (homeStickers) homeStickers.textContent = document.getElementById('wedit-sticker-count')?.textContent || '0';
   }
 
   async function clearAllEdits() {
@@ -3707,6 +4165,7 @@
   function start() {
     addStyles();
     buildUI();
+    refreshChangelog();
     checkForUserscriptUpdate();
     if (typeof GM_registerMenuCommand === 'function') {
       GM_registerMenuCommand('Check for WEdit updates', () => checkForUserscriptUpdate(true));
@@ -3734,9 +4193,13 @@
 
     window.setInterval(() => {
       if (
-        activeTab === 'announcements' &&
+        (activeTab === 'announcements' || activeTab === 'home') &&
         document.visibilityState === 'visible'
       ) refreshAnnouncements(false);
+      if (
+        (activeTab === 'changelog' || activeTab === 'home') &&
+        document.visibilityState === 'visible'
+      ) refreshChangelog();
     }, 15 * 60 * 1000);
 
     const observer = new MutationObserver(records => {

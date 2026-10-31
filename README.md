@@ -13,8 +13,11 @@ WEdit changes the visible page in your browser. It does not send messages, chang
 - Keep a searchable list of saved previews; restore one message or all previews.
 - Attach a local image, GIF, sticker-style image, or video preview, or use a direct HTTP(S) media URL.
 - Import saved WhatsApp sticker images in bulk or from a folder, then reuse them from a personal sticker shelf.
-- Choose eight themes, adjust a custom palette, enable Liquid Glass, and import/export theme JSON.
-- Export or import a full JSON backup, including saved previews, the selected theme, and uploaded media.
+- Open to a dashboard with local profile shortcuts, saved-preview/theme/sticker stats, News and Changelog links.
+- Drag the WEdit launcher anywhere on screen; its position stays on this device and the panel follows it.
+- Choose fourteen themes, adjust a custom palette, enable Liquid Glass, and import/export theme JSON.
+- Personalize the local profile card with a name, number label, and photo; use **Open profile** for WhatsApp's own profile controls.
+- Export or import a full JSON backup, including saved previews, the selected theme, profile card, and uploaded media.
 - Use Quick hide to restore original message text and hide all WEdit controls instantly; toggle it with **Alt+Shift+H**.
 - Read the in-panel changelog and public announcements; optional interface sounds are controlled by a toggle.
 - Toggle the panel with **Alt+Shift+E**. The editor also advertises **Ctrl/⌘+Enter** to apply the current edit.
@@ -63,6 +66,7 @@ Run [`package-webstore.cmd`](scripts/package-webstore.cmd). It creates `dist/wed
 ## Data and privacy
 
 - WEdit stores message preview records and theme settings in the WhatsApp Web origin's local browser storage.
+- WEdit stores the profile-card labels/photo and launcher position locally in that same browser profile.
 - Uploaded media is stored in IndexedDB under the WhatsApp Web origin.
 - A full backup may contain message text and uploaded media. Keep it where you want that data to remain.
 - If you enter a media URL, the browser loads that URL to show the preview.
@@ -83,20 +87,20 @@ See [Privacy and storage](docs/privacy-and-storage.md) for details.
 
 See [Installation](docs/installation.md), [Feature guide](docs/features.md), and [Advanced use](docs/advanced-use.md).
 
-The public [changelog](CHANGELOG.md) records releases. The separate Vercel announcements website displays the public feed and has a one-step publisher. The publishing key and GitHub token stay server-side; the WEdit extension only reads the public feed.
+The public [changelog](CHANGELOG.md) records releases. The Vercel newsroom displays announcements and release notes; its password-gated admin desk publishes both. The admin password and GitHub token stay server-side; WEdit only reads the public feeds.
 
-### Deploy the announcements website
+### Deploy the WEdit newsroom
 
-This repo contains a static Vercel site at [`index.html`](index.html) and a server-side publisher at [`api/announcements.js`](api/announcements.js).
+This repo contains a public WEdit newsroom at [`index.html`](index.html) and a server-side publisher at [`api/announcements.js`](api/announcements.js). News and release notes are public; only the admin publishing desk requires a password.
 
 1. In Vercel, choose **Add New → Project** and import `yoericwsg/wedit-whatsapp-preview` from GitHub.
 2. Keep the project root as the root directory and use the **Other** framework preset. Vercel serves `index.html` and detects the `/api` function automatically.
-3. Add these environment variables in **Project Settings → Environment Variables** with **Production only** selected, then deploy again. Do not expose publishing credentials to preview deployments:
+3. Add these environment variables in **Project Settings → Environment Variables** with **Production only** selected, then redeploy. Do not expose publishing credentials to preview deployments:
 
-- `ANNOUNCEMENT_KEY`: generate a new random key for yourself. Do not reuse the key posted in chat; treat that one as exposed.
+- `ADMIN_PASSWORD`: a private password for the newsroom admin desk. Keep it out of source files and public posts.
 - `GITHUB_TOKEN`: a fine-grained GitHub token restricted to this repository, with **Contents: Read and write** permission. Store it only in Vercel's environment-variable settings.
 
-Generate a key in PowerShell with:
+Generate a strong password in PowerShell with:
 
 ```powershell
 $bytes = New-Object byte[] 32
@@ -104,17 +108,18 @@ $bytes = New-Object byte[] 32
 [Convert]::ToBase64String($bytes)
 ```
 
-The key is a shared publisher credential: only give it to people allowed to post. Do not put either secret in GitHub files or the website bundle. The publisher accepts same-origin requests, validates HTTPS links and field sizes, keeps the latest 30 posts, and never returns the GitHub token to the page. The deployed Vercel URL becomes the public announcements page; the WEdit News panel continues reading the same public feed.
+Only share the admin password with people allowed to publish. Do not put either secret in GitHub files or the website bundle. The publisher accepts same-origin requests, validates HTTPS links, versions, and field sizes, keeps the latest 30 announcements, and never returns the GitHub token to the page. The Vercel site shows public announcements and changelog entries; WEdit reads the announcement and changelog JSON feeds directly from GitHub.
 
 ## Project files
 
 - `manifest.json` — Manifest V3 metadata and WhatsApp Web match.
 - `content.js` — extension content script.
 - `background.js` — fetches the public announcement feed for the extension.
-- `api/announcements.js` — Vercel function for reading and key-protected publishing.
-- `index.html` — public announcements page and simple publisher form.
+- `api/announcements.js` — Vercel function for public news reads and password-protected publishing.
+- `index.html` — public newsroom, changelog, and password-gated admin desk.
+- `changelog.json` — public release feed used by the site and WEdit.
 - `wedit.user.js` — Tampermonkey-ready userscript.
-- `announcements.json` and `CHANGELOG.md` — public update notes and feed.
+- `announcements.json`, `changelog.json`, and `CHANGELOG.md` — public update feeds and notes.
 - `install.cmd` — opens the browser extensions page and repository folder.
 - `scripts/package-webstore.cmd` — builds a minimal Web Store ZIP.
 - `docs/` — install, feature, privacy, and advanced guides, a local UI demo page, a real interface screenshot, and illustrative panel artwork.

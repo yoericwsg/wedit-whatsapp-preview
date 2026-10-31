@@ -4,7 +4,13 @@
 
 Edit `content.js`, visit `chrome://extensions/` or `edge://extensions/`, and press the extension card's reload button. Then reload WhatsApp Web. For Tampermonkey, edit `wedit.user.js` and refresh the WhatsApp Web tab.
 
-When publishing a userscript code change, increase `@version` in `wedit.user.js` and the value in `version.json` together. The installed script reads the small version file on WhatsApp Web page load; when the published version is newer, it opens the Tampermonkey update screen once for that version and displays an **Open update** button. Tampermonkey's own scheduled update check remains enabled as a second route.
+When publishing a userscript code change, increase `@version` in `wedit.user.js`, `manifest.json`, and `version.json` together. The installed script reads the version file when WhatsApp Web loads; if a newer release exists, it shows a notice with an **Update in Tampermonkey** button. Tampermonkey's scheduled update checks remain enabled.
+
+## Dashboard and profile card
+
+WEdit opens on **Home**. The shortcut tiles jump directly to each section. The floating launcher is moved by dragging its dotted grip; WEdit remembers its position on this device and places the panel beside it.
+
+The profile card can reuse the avatar visible in WhatsApp's toolbar. Name, phone label, and card photo edits are local WEdit display settings. **Open profile** opens WhatsApp's own profile menu. Some account details, including the phone number, are not exposed in the page header and must be entered manually if you want them on the local card.
 
 ## Message discovery
 
@@ -23,9 +29,9 @@ Message keys prefer WhatsApp's `data-id`. When that attribute is unavailable, WE
 
 Run `scripts/package-webstore.cmd` from the repo or double-click it. The output is `dist/wedit-web-store.zip`. Increase `manifest.json`'s version before uploading a later release. The store package should contain only runtime files, not the repo history or docs.
 
-## Publish an announcement
+## Publish an announcement or changelog entry
 
-**News** reads the public `announcements.json` feed from GitHub. It refreshes when opened and every 15 minutes while selected in a visible tab. To publish, use the Vercel announcements site. That page checks a private key server-side and uses a Vercel environment token to commit new public posts to GitHub. Never paste either secret into the extension source or public feed.
+**News** and **Changelog** read public feeds from GitHub. Open the Vercel newsroom and select **Admin sign-in**. After the password is checked, the admin desk can publish an announcement or release notes. The server writes the public JSON feeds and `CHANGELOG.md`; the admin password and fine-grained GitHub token stay in Vercel environment variables.
 
 Example feed structure:
 
@@ -43,7 +49,7 @@ Example feed structure:
 }
 ```
 
-Keep `schemaVersion` set to `1`. Add new posts at the start of the array; WEdit displays the newest dated posts first and reads up to 30 entries.
+Keep `schemaVersion` set to `1`. Add new announcements at the start of the array; WEdit displays the newest dated posts first and reads up to 30 entries. Changelog records use `changelog.json` and each entry has `version`, `date`, `title`, and a `notes` array.
 
 ## Troubleshooting
 

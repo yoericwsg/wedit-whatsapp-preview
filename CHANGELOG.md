@@ -1,5 +1,12 @@
 # Changelog
 
+## 4.1.0 — 2026-10-31
+
+- Added a Home dashboard with profile shortcuts, saved-preview/theme/sticker stats, and one-tap links to each WEdit section.
+- Added an editable local profile card and a shortcut that opens WhatsApp's own profile controls.
+- Added six color presets, a draggable launcher with saved position, and live changelog updates from the public feed.
+- Added a password-gated newsroom admin desk for announcements and release notes.
+
 ## 4.0.0 — 2026-10-30
 
 - Added Quick hide: **Alt+Shift+H** restores original message text and removes WEdit buttons and previews until toggled back on.

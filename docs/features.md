@@ -22,11 +22,15 @@ Animated WebP and GIF files animate in browsers that support them. WEdit imports
 
 ## Themes
 
-Choose one of eight presets, edit the custom color controls, or enable the Liquid Glass layer. Theme changes apply to the WEdit panel and are stored locally. Export/import theme JSON to reuse a palette.
+WEdit opens on the Home dashboard. It includes quick links to the editor, sticker/media shelf, themes, backups, changelog, and announcements. The draggable launcher and your dashboard card settings are saved locally.
+
+The profile card can show your WhatsApp toolbar photo when the page exposes it. You can add a local display name, phone label, or card photo. Those fields change this WEdit card only; **Open profile** opens WhatsApp's own profile controls for account changes. WhatsApp does not expose every profile field in its page header, so a phone number may need to be entered on the local card.
+
+Choose one of fourteen presets, edit the custom color controls, or enable the Liquid Glass layer. Theme changes apply to the WEdit panel and are stored locally. Export/import theme JSON to reuse a palette.
 
 ## Backup and restore
 
-A full backup can include preview text, uploaded media, and the current theme. Import can merge the saved previews or replace the current saved set. Restore-all removes WEdit's saved preview records and restores originals where those messages are loaded.
+A full backup can include preview text, uploaded media, the current theme, and the local profile card. Import can merge saved previews or replace the current saved set. Restore-all removes WEdit's saved preview records and restores originals where those messages are loaded.
 
 ## Sound effects
 
@@ -38,9 +42,9 @@ Select **Quick hide** in the panel or press **Alt+Shift+H**. WEdit restores the 
 
 ## Changelog and announcements
 
-Open **Changelog** for version notes. **News** reads the public `announcements.json` feed from this repository when opened and refreshes every 15 minutes while News remains selected in a visible tab. The feed renders plain text and HTTPS links only.
+Open **Changelog** for release notes or **News** for announcements. Both update from public repository feeds. The newsroom site also has a password-gated admin desk for publishing an announcement or changelog entry. Announcement posts and release notes are public.
 
-To publish, use the separate Vercel announcements site. Enter the private publisher key there and choose **Publish announcement**. The site keeps the GitHub write token on the server and preserves the latest 30 feed items. Feed posts are public, so keep private details out of announcements.
+To publish, open the Vercel newsroom, choose **Admin sign-in**, and enter the admin password. The server keeps the GitHub write token secret and preserves the newest 30 announcement posts. Keep private details out of public posts.
 
 ## Local-only boundary
 
