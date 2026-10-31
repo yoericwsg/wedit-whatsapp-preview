@@ -33,7 +33,7 @@ Run `scripts/package-webstore.cmd` from the repo or double-click it. The output 
 
 ## Publish an announcement or changelog entry
 
-**News** and **Changelog** read public feeds from GitHub. Open the Vercel newsroom and select **Admin sign-in**. After the password is checked, the admin desk can publish an announcement or release notes. The server writes the public JSON feeds and `CHANGELOG.md`; the admin password and fine-grained GitHub token stay in Vercel environment variables.
+**News** and **Changelog** read public feeds from GitHub. The News reader tracks posts marked read on this device, supports search and an unread-only filter, and can copy a post or follow its details link. The newsroom site provides public-feed search and newest/oldest sorting. Its admin desk includes a live preview as an announcement is composed. Open the Vercel newsroom and select **Admin sign-in** to publish; posts and release notes are public.
 
 Example feed structure:
 

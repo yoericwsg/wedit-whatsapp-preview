@@ -44,7 +44,7 @@ Select **Quick hide** in the panel or press **Alt+Shift+H**. WEdit restores the 
 
 ## Changelog and announcements
 
-Open **Changelog** for release notes or **News** for announcements. Both update from public repository feeds. The newsroom site also has a password-gated admin desk for publishing an announcement or changelog entry. Announcement posts and release notes are public.
+Open **Changelog** for release notes or **News** for announcements. The News reader shows a live status, unread count, and device-local read history. Search the feed, filter to unread items, mark one or all as read, copy a post, or open its details link. The newsroom website adds public search and sort controls. Both update from public repository feeds. The newsroom site also has a password-gated admin desk for publishing an announcement or changelog entry. Announcement posts and release notes are public.
 
 To publish, open the Vercel newsroom, choose **Admin sign-in**, and enter the admin password. The server keeps the GitHub write token secret and preserves the newest 30 announcement posts. Keep private details out of public posts.
 

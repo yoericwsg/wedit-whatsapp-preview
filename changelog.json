@@ -2,6 +2,16 @@
   "schemaVersion": 1,
   "entries": [
     {
+      "version": "4.3.0",
+      "date": "2026-10-31",
+      "title": "A smarter, clearer WEdit newsroom",
+      "notes": [
+        "Redesigned the announcement reader with unread counts, local read status, search, and clear live/offline states.",
+        "Added per-post mark-read, copy, and details actions plus a calmer empty state.",
+        "Added public newsroom search, sort, refresh feedback, and a live announcement preview for publishers."
+      ]
+    },
+    {
       "version": "4.2.0",
       "date": "2026-10-31",
       "title": "Profile sync, animated themes, and custom sounds",

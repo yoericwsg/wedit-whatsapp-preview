@@ -1,5 +1,11 @@
 # Changelog
 
+## 4.3.0 — 2026-10-31
+
+- Redesigned the WEdit announcement reader with unread counts, device-local read status, search, live/offline states, and per-post actions.
+- Added newsroom search and sorting, clearer empty/error states, refresh feedback, and a live announcement preview in the admin composer.
+- Kept announcement read history on this device only; search and copy actions do not send reader data to the feed.
+
 ## 4.2.0 — 2026-10-31
 
 - Added a profile sync button that reads the visible WhatsApp profile name, About text, phone, and photo into the Home card.

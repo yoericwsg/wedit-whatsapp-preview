@@ -21,6 +21,7 @@ WEdit changes the visible page in your browser. It does not send messages, chang
 - See a separate animated welcome card once when a new WEdit version first opens; choose its Liquid Glass or classic finish in Themes.
 - Export or import a full JSON backup, including saved previews, the selected theme, profile card, and uploaded media.
 - Use Quick hide to restore original message text and hide all WEdit controls instantly; toggle it with **Alt+Shift+H**.
+- Receive announcements in a newsroom panel with unread counts, local read status, search, copy, and details links; the website feed also supports search and sorting.
 - Read the in-panel changelog and public announcements; the sound toggle controls both generated and imported UI sounds.
 - Toggle the panel with **Alt+Shift+E**. The editor also advertises **Ctrl/⌘+Enter** to apply the current edit.
 

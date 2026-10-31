@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         WEdit — WhatsApp Local Preview Editor
 // @namespace    local.wedit.preview
-// @version      4.2.0
-// @description  Local WhatsApp preview studio with profile sync, sound imports, animated themes, and backups.
+// @version      4.3.0
+// @description  Local WhatsApp preview studio with profile sync, newsroom controls, custom sounds, and animated themes.
 // @match        https://web.whatsapp.com/*
 // @run-at       document-idle
 // @updateURL    https://raw.githubusercontent.com/yoericwsg/wedit-whatsapp-preview/main/wedit.user.js
@@ -26,11 +26,12 @@
   const SOUND_STORE_KEY = 'wedit-sounds-v1';
   const SOUND_MEDIA_KEY = 'wedit-custom-ui-sound';
   const WELCOME_VERSION_KEY = 'wedit-welcome-version-v1';
+  const ANNOUNCEMENTS_READ_KEY = 'wedit-announcements-read-v1';
   const PROFILE_STORE_KEY = 'wedit-profile-card-v1';
   const LAUNCHER_POSITION_KEY = 'wedit-launcher-position-v1';
   const ANNOUNCEMENTS_URL = 'https://raw.githubusercontent.com/yoericwsg/wedit-whatsapp-preview/main/announcements.json';
   const CHANGELOG_URL = 'https://raw.githubusercontent.com/yoericwsg/wedit-whatsapp-preview/main/changelog.json';
-  const APP_VERSION = '4.2.0';
+  const APP_VERSION = '4.3.0';
   const RELEASE_INFO_URL = 'https://raw.githubusercontent.com/yoericwsg/wedit-whatsapp-preview/main/version.json';
   const USERSCRIPT_URL = 'https://raw.githubusercontent.com/yoericwsg/wedit-whatsapp-preview/main/wedit.user.js';
   const PANEL_ID = 'wedit-panel';
@@ -39,6 +40,16 @@
   const SELECTOR_ROOT = '[data-testid="msg-container"], .message-in, .message-out';
   const QUOTED = '[data-testid="quoted-message"], .quoted-message, [data-testid="quoted-message-container"]';
   const CHANGELOG_ENTRIES = [
+    {
+      version: '4.3.0',
+      date: '2026-10-31',
+      title: 'A smarter, clearer WEdit newsroom',
+      notes: [
+        'Redesigned the announcement reader with unread counts, local read status, search, and clear live/offline states.',
+        'Added per-post mark-read, copy, and details actions plus a calmer empty state.',
+        'Added public newsroom search, sort, refresh feedback, and a live announcement preview for publishers.'
+      ]
+    },
     {
       version: '4.2.0',
       date: '2026-10-31',
@@ -276,6 +287,9 @@
   let localProfileCard = loadProfileCard();
   let announcementFeedItems = null;
   let announcementFeedReady = false;
+  let announcementReadIds = loadAnnouncementReadIds();
+  let announcementSearchTerm = '';
+  let announcementUnreadOnly = false;
   let audioContext = null;
 
   const objectURLs = new Map();
@@ -808,6 +822,33 @@
         display:inline-block;margin-top:8px;color:var(--wedit-accent);
         font-size:11px;font-weight:750
       }
+      #${PANEL_ID} .wedit-news-hero{position:relative;overflow:hidden;margin:0 0 10px;padding:14px;border:1px solid color-mix(in srgb,var(--wedit-accent) 35%,var(--wedit-border));border-radius:15px;background:radial-gradient(ellipse at 95% 0,color-mix(in srgb,var(--wedit-accent) 18%,transparent),transparent 56%),var(--wedit-surface)}
+      #${PANEL_ID} .wedit-news-hero-top{display:flex;justify-content:space-between;align-items:center;gap:8px}
+      #${PANEL_ID} .wedit-news-hero strong{display:block;margin-top:6px;color:var(--wedit-text);font-size:13px;letter-spacing:-.2px}
+      #${PANEL_ID} .wedit-news-hero p{margin:4px 0 0;color:var(--wedit-muted);font-size:10px;line-height:1.45}
+      #${PANEL_ID} .wedit-news-count{display:grid;place-items:center;min-width:34px;height:28px;padding:0 8px;border:1px solid color-mix(in srgb,var(--wedit-accent) 42%,var(--wedit-border));border-radius:9px;background:color-mix(in srgb,var(--wedit-accent) 11%,transparent);color:var(--wedit-accent);font-size:10px;font-weight:900}
+      #${PANEL_ID} .wedit-news-nav-count{display:inline-grid;place-items:center;min-width:15px;height:15px;padding:0 4px;border-radius:99px;background:var(--wedit-accent);color:var(--wedit-panel);font-size:8px;font-weight:950}
+      #${PANEL_ID} .wedit-news-tools{display:grid;grid-template-columns:1fr auto;gap:7px;align-items:center;margin:10px 0}
+      #${PANEL_ID} .wedit-news-tools input[type=search]{min-width:0;padding:9px 10px;font-size:10px}
+      #${PANEL_ID} .wedit-news-filter{display:flex;align-items:center;gap:5px;color:var(--wedit-muted);font-size:9px;font-weight:750;white-space:nowrap}
+      #${PANEL_ID} .wedit-news-filter input{accent-color:var(--wedit-accent)}
+      #${PANEL_ID} .wedit-news-actions{display:flex;justify-content:space-between;align-items:center;gap:8px;margin:0 0 7px}
+      #${PANEL_ID} .wedit-news-status{min-height:14px;color:var(--wedit-muted);font-size:9px}
+      #${PANEL_ID} .wedit-announcement-card{position:relative;padding:12px;transition:border-color .16s ease,transform .16s ease}
+      #${PANEL_ID} .wedit-announcement-card:hover{transform:translateY(-1px);border-color:color-mix(in srgb,var(--wedit-accent) 55%,var(--wedit-border))}
+      #${PANEL_ID} .wedit-announcement-card.is-unread{border-left:3px solid var(--wedit-accent);padding-left:10px;background:linear-gradient(115deg,color-mix(in srgb,var(--wedit-accent) 7%,transparent),transparent 45%),var(--wedit-surface)}
+      #${PANEL_ID} .wedit-announcement-card-head{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:7px}
+      #${PANEL_ID} .wedit-announcement-badge{display:inline-flex;align-items:center;gap:5px;color:var(--wedit-accent);font-size:8px;font-weight:900;letter-spacing:.7px;text-transform:uppercase}
+      #${PANEL_ID} .wedit-announcement-badge::before{content:'';width:6px;height:6px;border-radius:50%;background:currentColor}
+      #${PANEL_ID} .wedit-announcement-card.is-read .wedit-announcement-badge{color:var(--wedit-muted)}
+      #${PANEL_ID} .wedit-announcement-card h3{font-size:12px;line-height:1.4}
+      #${PANEL_ID} .wedit-announcement-meta{font-size:9px}
+      #${PANEL_ID} .wedit-announcement-body{font-size:10px;line-height:1.55}
+      #${PANEL_ID} .wedit-announcement-actions{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-top:8px}
+      #${PANEL_ID} .wedit-announcement-actions button,#${PANEL_ID} .wedit-announcement-actions a{margin:0;padding:5px 8px;border:1px solid var(--wedit-border);border-radius:8px;background:var(--wedit-surface2);color:var(--wedit-text);font-size:9px;font-weight:800;text-decoration:none;cursor:pointer}
+      #${PANEL_ID} .wedit-announcement-actions a{color:var(--wedit-accent)}
+      #${PANEL_ID} .wedit-news-empty{padding:17px 12px;border:1px dashed var(--wedit-border);border-radius:12px;color:var(--wedit-muted);font-size:10px;line-height:1.55;text-align:center}
+      #${PANEL_ID} .wedit-news-empty strong{display:block;margin-bottom:4px;color:var(--wedit-text);font-size:11px}
 
       #${PANEL_ID} .wedit-sound-row {
         display:flex;align-items:center;gap:9px;margin-top:12px;padding:10px;
@@ -1437,7 +1478,7 @@
         <button type="button" class="wedit-nav-tab"
           data-tab="changelog"><span>≡</span> Changelog</button>
         <button type="button" class="wedit-nav-tab"
-          data-tab="announcements"><span>◉</span> News</button>
+          data-tab="announcements"><span>◉</span> News <small id="wedit-news-nav-count" class="wedit-news-nav-count" hidden>0</small></button>
       </nav>
 
       <div class="wedit-body">
@@ -1785,7 +1826,7 @@
               <div class="wedit-label">Release notes</div>
               <div class="wedit-heading-title">Changelog</div>
             </div>
-            <span class="wedit-live-dot">4.1.0</span>
+            <span class="wedit-live-dot">4.3.0</span>
           </div>
           <div class="wedit-changelog-list" id="wedit-changelog-list"></div>
         </section>
@@ -1793,15 +1834,22 @@
         <section id="wedit-pane-announcements" class="wedit-pane" hidden>
           <div class="wedit-pane-heading">
             <div>
-              <div class="wedit-label">From WEdit</div>
-              <div class="wedit-heading-title">Announcements</div>
+              <div class="wedit-label">WEdit dispatch</div>
+              <div class="wedit-heading-title">Newsroom</div>
             </div>
             <button class="wedit-mini-link" id="wedit-refresh-announcements"
               type="button">Refresh</button>
           </div>
-          <div class="wedit-helper" id="wedit-announcements-status" role="status">
-            Announcements load from the public WEdit feed. They contain text and optional web links.
+          <div class="wedit-news-hero">
+            <div class="wedit-news-hero-top"><span class="wedit-live-dot" id="wedit-announcements-status" role="status">CONNECTING</span><span class="wedit-news-count" id="wedit-unread-count" aria-label="Unread announcements">0</span></div>
+            <strong id="wedit-news-headline">Your WEdit update feed</strong>
+            <p id="wedit-news-summary">Release notes and announcements appear here when published.</p>
           </div>
+          <div class="wedit-news-tools">
+            <input id="wedit-announcement-search" type="search" placeholder="Search announcements…" aria-label="Search announcements">
+            <label class="wedit-news-filter"><input id="wedit-announcement-unread" type="checkbox"> Unread only</label>
+          </div>
+          <div class="wedit-news-actions"><span class="wedit-news-status" id="wedit-announcement-updated">Checks for updates when opened.</span><button class="wedit-mini-link" id="wedit-mark-all-read" type="button">Mark all read</button></div>
           <div class="wedit-announcement-list" id="wedit-announcement-list"></div>
           <div class="wedit-helper">
             Posts are published on the WEdit newsroom. <a href="https://wedit-whatsapp-preview.vercel.app/" target="_blank" rel="noopener noreferrer">Open the newsroom →</a>
@@ -1811,7 +1859,7 @@
             <span>Play interface sound effects</span>
           </label>
           <div class="wedit-helper">
-            Sounds are generated on this device. Feed checks run when opened and every 15 minutes while this tab stays active.
+            Sound effects run only on this device. The feed checks when opened and every 15 minutes while WhatsApp is active.
           </div>
         </section>
 
@@ -1872,6 +1920,16 @@
         playInterfaceSound('tap');
         refreshAnnouncements(true);
       });
+
+    panel.querySelector('#wedit-announcement-search').addEventListener('input', event => {
+      announcementSearchTerm = event.target.value.trim().toLowerCase();
+      renderAnnouncements(announcementFeedItems || []);
+    });
+    panel.querySelector('#wedit-announcement-unread').addEventListener('change', event => {
+      announcementUnreadOnly = event.target.checked;
+      renderAnnouncements(announcementFeedItems || []);
+    });
+    panel.querySelector('#wedit-mark-all-read').addEventListener('click', markAllAnnouncementsRead);
 
     panel.querySelector('#wedit-pick-stickers')
       .addEventListener('click', () =>
@@ -2498,26 +2556,79 @@
     if (!list) return;
     list.replaceChildren();
 
-    if (!items.length) {
+    const unread = items.filter(item => !announcementReadIds.includes(announcementId(item))).length;
+    const unreadCount = document.getElementById('wedit-unread-count');
+    const navCount = document.getElementById('wedit-news-nav-count');
+    const headline = document.getElementById('wedit-news-headline');
+    const summary = document.getElementById('wedit-news-summary');
+    if (unreadCount) unreadCount.textContent = String(unread);
+    if (navCount) { navCount.textContent = String(Math.min(unread, 99)); navCount.hidden = unread === 0; }
+    if (headline) headline.textContent = unread ? `${unread} new update${unread === 1 ? '' : 's'} for you` : items.length ? 'You’re all caught up' : 'Waiting for the first post';
+    if (summary) summary.textContent = items.length
+      ? `${items.length} announcement${items.length === 1 ? '' : 's'} in the feed · refreshed when opened and every 15 minutes.`
+      : 'New posts from the WEdit newsroom will appear here automatically.';
+
+    const visibleItems = items.filter(item => {
+      const isUnread = !announcementReadIds.includes(announcementId(item));
+      if (announcementUnreadOnly && !isUnread) return false;
+      if (!announcementSearchTerm) return true;
+      return `${item.title} ${item.body}`.toLowerCase().includes(announcementSearchTerm);
+    });
+
+    if (!visibleItems.length) {
       const empty = document.createElement('div');
-      empty.className = 'wedit-empty';
-      empty.textContent = 'No announcements have been posted yet.';
+      empty.className = 'wedit-news-empty';
+      const title = document.createElement('strong');
+      title.textContent = items.length
+        ? (announcementUnreadOnly && !announcementSearchTerm ? 'You’re all caught up' : 'No matches in this view')
+        : 'No announcements yet';
+      const detail = document.createElement('span');
+      detail.textContent = items.length
+        ? (announcementUnreadOnly && !announcementSearchTerm ? 'There are no unread posts. Turn off “Unread only” to browse the full feed.' : 'Clear your search or turn off “Unread only” to see more posts.')
+        : 'When the WEdit team publishes an update, it will show up here.';
+      empty.append(title, detail);
       list.appendChild(empty);
       return;
     }
 
-    items.forEach(item => {
+    visibleItems.forEach(item => {
+      const id = announcementId(item);
+      const isRead = announcementReadIds.includes(id);
       const card = document.createElement('article');
-      card.className = 'wedit-announcement-card';
-      const heading = document.createElement('h3');
-      heading.textContent = item.title;
+      card.className = `wedit-announcement-card ${isRead ? 'is-read' : 'is-unread'}`;
+      const cardHead = document.createElement('div');
+      cardHead.className = 'wedit-announcement-card-head';
+      const badge = document.createElement('span');
+      badge.className = 'wedit-announcement-badge';
+      badge.textContent = isRead ? 'Read' : 'New update';
       const meta = document.createElement('div');
       meta.className = 'wedit-announcement-meta';
-      meta.textContent = new Date(item.publishedAt).toLocaleString();
+      meta.textContent = new Date(item.publishedAt).toLocaleString(undefined, {
+        month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit'
+      });
+      cardHead.append(badge, meta);
+      const heading = document.createElement('h3');
+      heading.textContent = item.title;
       const body = document.createElement('p');
       body.className = 'wedit-announcement-body';
       body.textContent = item.body;
-      card.append(heading, meta, body);
+      const actions = document.createElement('div');
+      actions.className = 'wedit-announcement-actions';
+      const readButton = document.createElement('button');
+      readButton.type = 'button';
+      readButton.textContent = isRead ? 'Read' : 'Mark read';
+      readButton.disabled = isRead;
+      readButton.addEventListener('click', () => markAnnouncementRead(id));
+      const copyButton = document.createElement('button');
+      copyButton.type = 'button';
+      copyButton.textContent = 'Copy update';
+      copyButton.addEventListener('click', async () => {
+        try {
+          await navigator.clipboard.writeText(`${item.title}\n\n${item.body}`);
+          showToast('Announcement copied.');
+        } catch (_) { showToast('Clipboard access is unavailable in this tab.'); }
+      });
+      actions.append(readButton, copyButton);
 
       if (item.link) {
         const link = document.createElement('a');
@@ -2525,10 +2636,43 @@
         link.target = '_blank';
         link.rel = 'noopener noreferrer';
         link.textContent = 'More details →';
-        card.appendChild(link);
+        actions.appendChild(link);
       }
+      card.append(cardHead, heading, body, actions);
       list.appendChild(card);
     });
+  }
+
+  function announcementId(item) {
+    return hashString(`${item.publishedAt}|${item.title}|${item.body}`);
+  }
+
+  function loadAnnouncementReadIds() {
+    try {
+      const value = JSON.parse(localStorage.getItem(ANNOUNCEMENTS_READ_KEY) || '[]');
+      return Array.isArray(value) ? value.filter(id => typeof id === 'string').slice(0, 300) : [];
+    } catch (_) { return []; }
+  }
+
+  function saveAnnouncementReadIds() {
+    try { localStorage.setItem(ANNOUNCEMENTS_READ_KEY, JSON.stringify(announcementReadIds.slice(-300))); }
+    catch (_) { showToast('Could not save announcement read status.'); }
+  }
+
+  function markAnnouncementRead(id) {
+    if (!announcementReadIds.includes(id)) announcementReadIds.push(id);
+    saveAnnouncementReadIds();
+    renderAnnouncements(announcementFeedItems || []);
+  }
+
+  function markAllAnnouncementsRead() {
+    for (const item of announcementFeedItems || []) {
+      const id = announcementId(item);
+      if (!announcementReadIds.includes(id)) announcementReadIds.push(id);
+    }
+    saveAnnouncementReadIds();
+    renderAnnouncements(announcementFeedItems || []);
+    playInterfaceSound('success');
   }
 
   async function refreshAnnouncements(showFeedback) {
@@ -2536,7 +2680,9 @@
     if (announcementsRequest) return announcementsRequest;
     const buildButton = document.getElementById('wedit-build-announcement');
     if (!announcementFeedReady && buildButton) buildButton.disabled = true;
-    if (status && showFeedback) status.textContent = 'Checking for announcements…';
+    if (status) status.textContent = 'UPDATING';
+    const updated = document.getElementById('wedit-announcement-updated');
+    if (updated) updated.textContent = 'Checking the public feed…';
 
     announcementsRequest = (async () => {
       try {
@@ -2546,11 +2692,8 @@
         announcementFeedReady = true;
         if (buildButton) buildButton.disabled = false;
         renderAnnouncements(items);
-        if (status) {
-          status.textContent = items.length
-            ? `Updated just now · ${items.length} announcement${items.length === 1 ? '' : 's'}`
-            : 'Feed is up to date. No announcements yet.';
-        }
+        if (status) status.textContent = 'LIVE';
+        if (updated) updated.textContent = `Updated ${new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}`;
         const draftStatus = document.getElementById('wedit-announcement-draft-status');
         if (draftStatus) {
           draftStatus.textContent = 'Feed ready. Write a title and message, then publish.';
@@ -2559,6 +2702,8 @@
       } catch (error) {
         console.warn('[WEdit] Announcement feed unavailable:', error);
         announcementFeedReady = false;
+        if (status) status.textContent = 'OFFLINE';
+        if (updated) updated.textContent = 'Could not refresh · tap Refresh to try again.';
         if (buildButton) buildButton.disabled = true;
         if (status) status.textContent =
           'Could not load announcements. Check your connection and refresh.';
@@ -4439,6 +4584,7 @@
     addStyles();
     buildUI();
     showVersionWelcome();
+    refreshAnnouncements(false);
     refreshChangelog();
     checkForUserscriptUpdate();
     if (typeof GM_registerMenuCommand === 'function') {
