@@ -155,7 +155,9 @@
       $('#feed-updated').textContent = 'Checking the public feed…';
       $('#announcements').replaceChildren(Object.assign(document.createElement('p'), { className: 'empty', textContent: 'Loading announcements…' }));
       try {
-        const response = await fetch('/api/announcements', { cache: 'no-store' });
+        const endpoint = new URL('/api/announcements', location.href);
+        endpoint.searchParams.set('fresh', String(Date.now()));
+        const response = await fetch(endpoint, { cache: 'no-store' });
         const result = await response.json();
         if (!response.ok) throw new Error(result.error || 'Could not load WEdit news.');
         data.announcements = Array.isArray(result.announcements) ? result.announcements : [];
